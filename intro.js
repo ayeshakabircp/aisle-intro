@@ -70,10 +70,7 @@ function resetAll(){
   document.getElementById('aisle-reveal').classList.remove('show');
   document.getElementById('scroll-ind').classList.remove('show');
   document.getElementById('replay-btn').classList.remove('show');
-  document.getElementById('room-scene').classList.remove('active');
-  document.getElementById('intro-scene').classList.remove('hidden');
-  const mi=document.getElementById('marquee-inner');
-  mi.style.transition='none';mi.style.transform='translateX(105vw)';
+  roomT0=null; // reset room camera too
 }
 
 function startMarquee(onExit){
@@ -87,6 +84,9 @@ function startMarquee(onExit){
 
 function runIntro(){
   let c=0;
+  POSITIONS=generatePositions();
+  ALL_IDS.forEach((id,i)=>placeG(id,i));
+
   T(()=>{setWord('Too');placeG('g1',0);showG('g1');},c);
   c+=650;T(()=>{setWord('many');placeG('g3',1);showG('g3');},c);
   c+=650;T(()=>{setWord('options');placeG('g5',2);showG('g5');},c);
@@ -116,6 +116,3 @@ function runIntro(){
 }
 
 function replayIntro(){resetAll();setTimeout(runIntro,80);}
-
-POSITIONS=generatePositions();
-ALL_IDS.forEach((id,i)=>placeG(id,i));
