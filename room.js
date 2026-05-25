@@ -20,7 +20,7 @@ function initRoom() {
 
   // Exponential fog — very low density, translucent not opaque
   // You see through it, it just adds warm atmospheric haze
-  roomScene.fog = new THREE.FogExp2(0xE2C89A, 0.00028);
+  roomScene.fog = new THREE.FogExp2(0xE2C89A, 0.0012);
 
   roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -40,7 +40,7 @@ function buildRoom() {
   const floorMat = new THREE.MeshStandardMaterial({
     color: 0xA07848, roughness: 0.82, metalness: 0.08
   });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), floorMat);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(60000, rD), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = floorY;
   roomScene.add(floor);
@@ -50,7 +50,7 @@ function buildRoom() {
     color: 0xFFCC88, roughness: 0.05, metalness: 0.2,
     transparent: true, opacity: 0.15
   });
-  const refl = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), reflMat);
+  const refl = new THREE.Mesh(new THREE.PlaneGeometry(60000, rD), reflMat);
   refl.rotation.x = -Math.PI / 2;
   refl.position.y = floorY + 1;
   roomScene.add(refl);
@@ -59,22 +59,12 @@ function buildRoom() {
   const ceilMat = new THREE.MeshStandardMaterial({
     color: 0xC8A070, roughness: 0.96
   });
-  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), ceilMat);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(60000, rD), ceilMat);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
-  // SIDE FILL PLANES — same color as bg, seamlessly fill the void
-  // These are NOT visible walls — they're bg-colored fills that make
-  // the space feel infinite by matching the scene background exactly
-  const sideFillMat = new THREE.MeshBasicMaterial({ color: 0xE2C89A, side: THREE.DoubleSide });
-  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(rD, 2000), sideFillMat);
-  sideL.rotation.y = Math.PI / 2; sideL.position.x = -1200; roomScene.add(sideL);
-  const sideR = new THREE.Mesh(new THREE.PlaneGeometry(rD, 2000), sideFillMat);
-  sideR.rotation.y = -Math.PI / 2; sideR.position.x = 1200; roomScene.add(sideR);
-  // Back fill
-  const backFill = new THREE.Mesh(new THREE.PlaneGeometry(8000, 2000), sideFillMat);
-  backFill.position.z = -4000; roomScene.add(backFill);
+  // No side walls — truly open space
 
   // CEILING LIGHT STRIPS — 5 pairs converging to vanishing point
   // Spread across ceiling width so they frame without walls
