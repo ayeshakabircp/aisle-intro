@@ -18,7 +18,7 @@ function initRoom() {
   roomScene = new THREE.Scene();
   roomScene.background = new THREE.Color(0xE8D5BC);
   // Dreamy dispersed fog — starts far, wide range
-  roomScene.fog = new THREE.Fog(0xEDD8BE, 1200, 5500);
+  roomScene.fog = new THREE.Fog(0xE8D5BC, 200, 2800);
 
   roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -38,7 +38,7 @@ function makeGradientPlane(width, depth, centerHex, roughness, metalness) {
   const colors = [];
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
-    const t = Math.pow(Math.abs(x) / (width / 2), 1.5);
+    const t = Math.pow(Math.abs(x) / (width * 0.3), 2.0);
     const c = new THREE.Color(centerHex);
     c.lerp(BG, Math.min(t, 1));
     colors.push(c.r, c.g, c.b);
@@ -54,13 +54,13 @@ function buildRoom() {
   const ceilY = 350, floorY = -350;
 
   // FLOOR — warm sand center, fades to bg at edges — no hard boundary
-  const floor = makeGradientPlane(6000, rD, 0xB8906A, 0.94, 0.03);
+  const floor = makeGradientPlane(10000, rD, 0xB8906A, 0.94, 0.03);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = floorY;
   roomScene.add(floor);
 
   // CEILING — lighter warm, same dissolve
-  const ceil = makeGradientPlane(6000, rD, 0xD4B48A, 0.97, 0.0);
+  const ceil = makeGradientPlane(10000, rD, 0xD4B48A, 0.97, 0.0);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
@@ -106,6 +106,21 @@ function buildRoom() {
   ff.position.set(0, 100, 600); roomScene.add(ff);
   const bn = new THREE.PointLight(0xB87848, 0.4, 600);
   bn.position.set(0, -300, 0); roomScene.add(bn);
+
+  // SIDE FOG PLANES — large transparent planes at sides to fake fog density
+  const fogMat = new THREE.MeshBasicMaterial({
+    color: 0xE8D5BC, transparent: true, opacity: 0.0,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  // These are invisible but their presence helps the fog calculation
+  // Instead use additional point lights at sides with fog color to wash out edges
+  const sideWashL = new THREE.PointLight(0xE8D5BC, 3.0, 600);
+  sideWashL.position.set(-900, 0, 0); roomScene.add(sideWashL);
+  const sideWashR = new THREE.PointLight(0xE8D5BC, 3.0, 600);
+  sideWashR.position.set(900, 0, 0); roomScene.add(sideWashR);
+  // Also wash out the back
+  const backWash = new THREE.PointLight(0xE8D5BC, 2.0, 500);
+  backWash.position.set(0, 0, -2600); roomScene.add(backWash);
 }
 
 function buildGarments() {
