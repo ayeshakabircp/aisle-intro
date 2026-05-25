@@ -1,9 +1,8 @@
-let roomRenderer, roomScene, roomCamera, roomComposer;
+let roomRenderer, roomScene, roomCamera;
 let roomT0 = null;
 const roomGarmentMeshes = [], roomThreadGeos = [];
 
-async function initRoom() {
-  // Hide bg image — using Three.js room only
+function initRoom() {
   const bgWrap = document.getElementById('room-bg-wrap');
   if (bgWrap) bgWrap.style.display = 'none';
 
@@ -14,32 +13,16 @@ async function initRoom() {
   roomRenderer.setSize(W, H);
   roomRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  roomRenderer.toneMappingExposure = 1.0;
-  roomRenderer.shadowMap.enabled = false;
+  roomRenderer.toneMappingExposure = 1.15;
 
   roomScene = new THREE.Scene();
-  roomScene.background = new THREE.Color(0x8B5A2B);
-  // Dense warm fog — vanishing point glows and dissolves
-  roomScene.fog = new THREE.Fog(0xC8844A, 300, 2600);
+  roomScene.background = new THREE.Color(0xE8D5BC);
+  // Dreamy dispersed fog — starts far, wide range
+  roomScene.fog = new THREE.Fog(0xEDD8BE, 1200, 5500);
 
-  roomCamera = new THREE.PerspectiveCamera(68, W / H, 1, 8000);
+  roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
   roomCamera.lookAt(0, 40, 0);
-
-  // BLOOM
-  try {
-    const { EffectComposer } = await import('https://unpkg.com/three@0.128.0/examples/jsm/postprocessing/EffectComposer.js');
-    const { RenderPass }     = await import('https://unpkg.com/three@0.128.0/examples/jsm/postprocessing/RenderPass.js');
-    const { UnrealBloomPass }= await import('https://unpkg.com/three@0.128.0/examples/jsm/postprocessing/UnrealBloomPass.js');
-    roomComposer = new EffectComposer(roomRenderer);
-    roomComposer.addPass(new RenderPass(roomScene, roomCamera));
-    roomComposer.addPass(new UnrealBloomPass(
-      new THREE.Vector2(W, H),
-      0.6,  // strength — subtle
-      0.5,  // radius
-      0.25  // threshold
-    ));
-  } catch(e) { console.warn('Bloom unavailable'); }
 
   buildRoom();
   buildGarments();
@@ -47,171 +30,131 @@ async function initRoom() {
   startRoomLoop();
 }
 
-function buildRoom() {
-  const rW = 1800, rH = 750, rD = 9000;
-  const ceilY = rH / 2, floorY = -rH / 2;
+function makeGradientPlane(width, depth, centerHex, roughness, metalness) {
+  const segs = 30;
+  const geo = new THREE.PlaneGeometry(width, depth, segs, 1);
+  const pos = geo.attributes.position;
+  const BG = new THREE.Color(0xE8D5BC);
+  const colors = [];
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const t = Math.pow(Math.abs(x) / (width / 2), 1.5);
+    const c = new THREE.Color(centerHex);
+    c.lerp(BG, Math.min(t, 1));
+    colors.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+    vertexColors: true, roughness, metalness
+  }));
+}
 
-  // FLOOR — warm sand with subtle texture via color variation
-  const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x6B4423, roughness: 0.75, metalness: 0.12
-  });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), floorMat);
+function buildRoom() {
+  const rD = 9000;
+  const ceilY = 350, floorY = -350;
+
+  // FLOOR — warm sand center, fades to bg at edges — no hard boundary
+  const floor = makeGradientPlane(6000, rD, 0xB8906A, 0.94, 0.03);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = floorY;
   roomScene.add(floor);
 
-  // FLOOR REFLECTION — polished surface
-  const reflMat = new THREE.MeshStandardMaterial({
-    color: 0xFFBB66, roughness: 0.02, metalness: 0.3,
-    transparent: true, opacity: 0.18
-  });
-  const refl = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), reflMat);
-  refl.rotation.x = -Math.PI / 2;
-  refl.position.y = floorY + 1;
-  roomScene.add(refl);
-
-  // CEILING
-  const ceilMat = new THREE.MeshStandardMaterial({ color: 0x8B6235, roughness: 0.95 });
-  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), ceilMat);
+  // CEILING — lighter warm, same dissolve
+  const ceil = makeGradientPlane(6000, rD, 0xD4B48A, 0.97, 0.0);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
-  // SIDE WALLS — subtle, warm, just enough to frame
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x9B7245, roughness: 0.95 });
-  const lw = new THREE.Mesh(new THREE.PlaneGeometry(rD, rH), wallMat);
-  lw.rotation.y = Math.PI / 2; lw.position.x = -rW / 2;
-  roomScene.add(lw);
-  const rw = new THREE.Mesh(new THREE.PlaneGeometry(rD, rH), wallMat);
-  rw.rotation.y = -Math.PI / 2; rw.position.x = rW / 2;
-  roomScene.add(rw);
+  // NO SIDE WALLS — open infinite space
 
-  // CEILING LIGHT STRIPS — 5 pairs converging to vanishing point
-  // Each pair gets progressively closer together toward center
-  const stripPairs = [
-    { x: 420,  width: 6 },
-    { x: 280,  width: 5 },
-    { x: 140,  width: 4 },
-    { x: -140, width: 4 },
-    { x: -280, width: 5 },
-    { x: -420, width: 6 },
-  ];
-
-  stripPairs.forEach(({ x, width }) => {
+  // CEILING STRIPS — warm amber emissive
+  [-260, 260].forEach(x => {
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xFFFFEE,
-      emissive: new THREE.Color(0xFFFFEE),
-      emissiveIntensity: 12.0,
-      roughness: 0.0
+      color: 0xFFCCA0, emissive: new THREE.Color(0xFFCCA0),
+      emissiveIntensity: 3.5, roughness: 0.05
     });
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(width, 3, rD * 0.97), mat);
-    strip.position.set(x, ceilY - 3, -rD * 0.02);
-    roomScene.add(strip);
-
-    // Light spilling down from each strip
-    const pl = new THREE.PointLight(0xFFCC66, 0.5, 1000);
-    pl.position.set(x, ceilY - 40, 0);
-    roomScene.add(pl);
+    const s = new THREE.Mesh(new THREE.BoxGeometry(10, 5, rD * 0.95), mat);
+    s.position.set(x, ceilY - 5, 0);
+    roomScene.add(s);
   });
 
-  // FLOOR LIGHT REFLECTIONS — strips reflect on floor
-  stripPairs.forEach(({ x, width }) => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xFFFFCC,
-      emissive: new THREE.Color(0xFFFFCC),
-      emissiveIntensity: 2.5,
-      roughness: 0.0,
-      transparent: true,
-      opacity: 0.35
+  // CEILING DISCS + POINT LIGHTS
+  const dg = new THREE.CircleGeometry(34, 32);
+  const dm = new THREE.MeshStandardMaterial({
+    color: 0xFFCCA0, emissive: new THREE.Color(0xFFCCA0),
+    emissiveIntensity: 3.0, roughness: 0.05
+  });
+  [-200, -800, -1400, -2000, -2600, -3200, -3800].forEach(z => {
+    [-260, 260].forEach(x => {
+      const d = new THREE.Mesh(dg, dm);
+      d.rotation.x = Math.PI / 2;
+      d.position.set(x, ceilY - 2, z);
+      roomScene.add(d);
+      const pl = new THREE.PointLight(0xFFAA66, 1.0, 800);
+      pl.position.set(x, ceilY - 30, z);
+      roomScene.add(pl);
     });
-    const refl = new THREE.Mesh(new THREE.BoxGeometry(width * 0.8, 1, rD * 0.85), mat);
-    refl.position.set(x, floorY + 1.5, -rD * 0.05);
-    roomScene.add(refl);
   });
 
-  // VANISHING POINT GLOW — pure light, no geometry planes
-  // Multiple point lights deep in the scene build up the golden glow
-
-  // SCENE LIGHTS
-  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.15));
-
-  const main = new THREE.PointLight(0xFFBB44, 2.0, 2500);
-  main.position.set(0, 400, -200);
-  roomScene.add(main);
-
-  // Strong vanishing point pull light
-  const vp1 = new THREE.PointLight(0xFFEE88, 6.0, 3000);
-  vp1.position.set(0, 80, -800); roomScene.add(vp1);
-  const vp2 = new THREE.PointLight(0xFFFFAA, 4.0, 2000);
-  vp2.position.set(0, 60, -1200); roomScene.add(vp2);
-  const vp3 = new THREE.PointLight(0xFFFFCC, 3.0, 1200);
-  vp3.position.set(0, 40, -1600); roomScene.add(vp3);
-
-  const dir = new THREE.DirectionalLight(0xFFAA44, 1.0);
-  dir.position.set(400, 300, 200);
-  roomScene.add(dir);
-
-  const near = new THREE.PointLight(0xFFCC99, 0.6, 1000);
-  near.position.set(0, 100, 600);
-  roomScene.add(near);
-
-  const bounce = new THREE.PointLight(0xC8834A, 0.5, 800);
-  bounce.position.set(0, -300, 0);
-  roomScene.add(bounce);
+  // LIGHTS
+  roomScene.add(new THREE.AmbientLight(0xFFBB88, 0.45));
+  const main = new THREE.PointLight(0xFFAA55, 1.8, 2500);
+  main.position.set(0, 280, -200); roomScene.add(main);
+  const vp = new THREE.PointLight(0xFFCC88, 1.5, 2500);
+  vp.position.set(0, 80, -1000); roomScene.add(vp);
+  const ff = new THREE.PointLight(0xFFBB99, 0.5, 900);
+  ff.position.set(0, 100, 600); roomScene.add(ff);
+  const bn = new THREE.PointLight(0xB87848, 0.4, 600);
+  bn.position.set(0, -300, 0); roomScene.add(bn);
 }
 
 function buildGarments() {
-  const ceilY = 375;
+  const ceilY = 350;
   const SCALE = 1.5;
 
   const gData = [
-    { x:-320, z:-180,  w:110, h:190, img:1, sway:0.0,  threadLen:320 },
-    { x:-180, z:-260,  w:85,  h:160, img:2, sway:1.1,  threadLen:90  },
-    { x:-400, z:-400,  w:105, h:185, img:3, sway:0.5,  threadLen:220 },
-    { x:30,   z:-600,  w:120, h:200, img:4, sway:2.1,  threadLen:340 },
-    { x:180,  z:-700,  w:80,  h:150, img:5, sway:0.8,  threadLen:75  },
-    { x:320,  z:-480,  w:110, h:195, img:6, sway:1.6,  threadLen:180 },
-    { x:460,  z:-620,  w:90,  h:170, img:7, sway:2.4,  threadLen:310 },
-    { x:360,  z:-820,  w:115, h:185, img:1, sway:0.3,  threadLen:110 },
-    { x:-80,  z:-1050, w:100, h:180, img:2, sway:1.9,  threadLen:280 },
-    { x:240,  z:-1250, w:110, h:190, img:3, sway:1.2,  threadLen:95  },
-    { x:-280, z:-1550, w:95,  h:175, img:4, sway:2.8,  threadLen:330 },
-    { x:90,   z:-1850, w:105, h:185, img:5, sway:0.6,  threadLen:140 },
-    { x:-160, z:-2150, w:90,  h:170, img:6, sway:1.5,  threadLen:265 },
-    { x:300,  z:-2450, w:100, h:180, img:7, sway:2.2,  threadLen:85  },
+    { x:-320, z:-200,  w:110, h:190, img:1, sway:0.0,  tLen:310 },
+    { x:-180, z:-300,  w:85,  h:160, img:2, sway:1.1,  tLen:85  },
+    { x:-400, z:-440,  w:105, h:185, img:3, sway:0.5,  tLen:210 },
+    { x:30,   z:-620,  w:120, h:200, img:4, sway:2.1,  tLen:330 },
+    { x:180,  z:-720,  w:80,  h:150, img:5, sway:0.8,  tLen:72  },
+    { x:320,  z:-500,  w:110, h:195, img:6, sway:1.6,  tLen:175 },
+    { x:460,  z:-640,  w:90,  h:170, img:7, sway:2.4,  tLen:300 },
+    { x:360,  z:-840,  w:115, h:185, img:1, sway:0.3,  tLen:105 },
+    { x:-80,  z:-1060, w:100, h:180, img:2, sway:1.9,  tLen:270 },
+    { x:240,  z:-1260, w:110, h:190, img:3, sway:1.2,  tLen:90  },
+    { x:-280, z:-1560, w:95,  h:175, img:4, sway:2.8,  tLen:320 },
+    { x:90,   z:-1860, w:105, h:185, img:5, sway:0.6,  tLen:135 },
+    { x:-160, z:-2160, w:90,  h:170, img:6, sway:1.5,  tLen:255 },
+    { x:300,  z:-2460, w:100, h:180, img:7, sway:2.2,  tLen:80  },
   ];
 
   const loader = new THREE.TextureLoader();
-  const lineMat = new THREE.LineBasicMaterial({
-    color: 0xE8C090, transparent: true, opacity: 0.55
-  });
+  const lm = new THREE.LineBasicMaterial({ color: 0xC8906A, transparent: true, opacity: 0.4 });
 
   gData.forEach(g => {
     const w = g.w * SCALE, h = g.h * SCALE;
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xC44C18, roughness: 0.75,
+      color: g.color || 0xC44C18, roughness: 0.8,
       transparent: true, opacity: 0.93,
       side: THREE.DoubleSide, alphaTest: 0.1
     });
-    loader.load(
-      `/dress${g.img}.png`,
+    loader.load(`/dress${g.img}.png`,
       tex => { mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true; },
       undefined, () => {}
     );
+    const topY = ceilY - g.tLen;
+    const baseY = topY - h / 2;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    const garmentTopY = ceilY - g.threadLen;
-    const baseY = garmentTopY - h / 2;
     mesh.position.set(g.x, baseY, g.z);
-    mesh.userData = { baseX: g.x, baseZ: g.z, sway: g.sway, baseY, garmentTopY };
-    roomScene.add(mesh);
-    roomGarmentMeshes.push(mesh);
-
+    mesh.userData = { bx: g.x, bz: g.z, sw: g.sway, by: baseY, ty: topY };
+    roomScene.add(mesh); roomGarmentMeshes.push(mesh);
     const geo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(g.x, ceilY, g.z),
-      new THREE.Vector3(g.x, garmentTopY, g.z)
+      new THREE.Vector3(g.x, topY, g.z)
     ]);
-    roomScene.add(new THREE.Line(geo, lineMat));
-    roomThreadGeos.push({ geo, ceilY, garmentTopY, baseZ: g.z });
+    roomScene.add(new THREE.Line(geo, lm));
+    roomThreadGeos.push({ geo, bz: g.z, ty: topY });
   });
 }
 
@@ -221,51 +164,42 @@ function buildGrain() {
   grain.width = window.innerWidth;
   grain.height = window.innerHeight;
   const gctx = grain.getContext('2d');
-  function drawGrain() {
+  function draw() {
     const id = gctx.createImageData(grain.width, grain.height);
     const d = id.data;
     for (let i = 0; i < d.length; i += 4) {
       const v = Math.random() * 255;
-      d[i] = Math.min(255, v+30); d[i+1] = Math.min(255, v+12);
-      d[i+2] = Math.round(v*0.6); d[i+3] = 255;
+      d[i] = Math.min(255, v+12); d[i+1] = Math.min(255, v+5);
+      d[i+2] = Math.round(v*0.8); d[i+3] = 255;
     }
     gctx.putImageData(id, 0, 0);
   }
-  drawGrain();
-  setInterval(drawGrain, 100);
+  draw(); setInterval(draw, 150);
 }
 
 function startRoomLoop() {
-  const DUR = 8000;
-  const SZ = 700, EZ = -200;
-
-  function easeInOutQuart(t) {
-    return t < 0.5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2, 4) / 2;
-  }
+  const SZ = 700, EZ = 100, DUR = 8000;
+  function eq(t) { return t < 0.5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2, 4)/2; }
 
   function animate(now) {
     requestAnimationFrame(animate);
     if (!roomT0) roomT0 = now;
-    const p = easeInOutQuart(Math.min((now - roomT0) / DUR, 1));
-
+    const p = eq(Math.min((now - roomT0) / DUR, 1));
     roomCamera.position.z = SZ + (EZ - SZ) * p;
-    roomCamera.position.y = 60 - p * 15;
-    roomCamera.lookAt(0, 40 + p * 10, 0);
-
-    const tt = now * 0.0004;
+    roomCamera.position.y = 60 - p * 10;
+    roomCamera.lookAt(0, 40 + p * 5, 0);
+    const t = now * 0.0005;
     roomGarmentMeshes.forEach((mesh, i) => {
-      const s = Math.sin(tt + mesh.userData.sway) * 2.0;
-      mesh.position.x = mesh.userData.baseX + s;
-      mesh.rotation.z = s * 0.0016;
+      const s = Math.sin(t + mesh.userData.sw) * 2.2;
+      mesh.position.x = mesh.userData.bx + s;
+      mesh.rotation.z = s * 0.002;
       const tg = roomThreadGeos[i];
       tg.geo.setFromPoints([
-        new THREE.Vector3(mesh.position.x, tg.ceilY, tg.baseZ),
-        new THREE.Vector3(mesh.position.x, tg.garmentTopY, tg.baseZ)
+        new THREE.Vector3(mesh.position.x, 350, tg.bz),
+        new THREE.Vector3(mesh.position.x, tg.ty, tg.bz)
       ]);
     });
-
-    if (roomComposer) roomComposer.render();
-    else roomRenderer.render(roomScene, roomCamera);
+    roomRenderer.render(roomScene, roomCamera);
   }
   requestAnimationFrame(animate);
 }
@@ -276,5 +210,4 @@ window.addEventListener('resize', () => {
   roomCamera.aspect = W / H;
   roomCamera.updateProjectionMatrix();
   roomRenderer.setSize(W, H);
-  if (roomComposer) roomComposer.setSize(W, H);
 });
