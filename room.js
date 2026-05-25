@@ -182,17 +182,15 @@ function buildGarments() {
   gData.forEach(g => {
     const w = g.w * SCALE, h = g.h * SCALE;
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x7A3010, roughness: 0.8,
+      color: 0xC4855A, roughness: 0.8,
       transparent: true, opacity: 0.95,
       side: THREE.DoubleSide, alphaTest: 0.08
     });
     loader.load(`/dress${g.img}.png`,
       tex => {
         mat.map = tex;
-        mat.color.set(0xffffff);
-        // Boost contrast on the texture
-        mat.emissive = new THREE.Color(0x0a0805);
-        mat.emissiveIntensity = 0.15;
+        mat.color.set(0xFFE8D8); // warm tint — blends but stays visible
+
         mat.needsUpdate = true;
       },
       undefined, () => {}
