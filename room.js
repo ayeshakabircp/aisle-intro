@@ -13,12 +13,14 @@ function initRoom() {
   roomRenderer.setSize(W, H);
   roomRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  roomRenderer.toneMappingExposure = 1.15;
+  roomRenderer.toneMappingExposure = 1.2;
 
   roomScene = new THREE.Scene();
-  roomScene.background = new THREE.Color(0xE8D5BC);
-  // Dreamy dispersed fog — starts far, wide range
-  roomScene.fog = new THREE.Fog(0xE8D5BC, 200, 2800);
+  roomScene.background = new THREE.Color(0xE2C89A);
+
+  // Exponential fog — very low density, translucent not opaque
+  // You see through it, it just adds warm atmospheric haze
+  roomScene.fog = new THREE.FogExp2(0xE8D0A0, 0.00035);
 
   roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -30,97 +32,120 @@ function initRoom() {
   startRoomLoop();
 }
 
-function makeGradientPlane(width, depth, centerHex, roughness, metalness) {
-  const segs = 30;
-  const geo = new THREE.PlaneGeometry(width, depth, segs, 1);
-  const pos = geo.attributes.position;
-  const BG = new THREE.Color(0xE8D5BC);
-  const colors = [];
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const t = Math.pow(Math.abs(x) / (width * 0.3), 2.0);
-    const c = new THREE.Color(centerHex);
-    c.lerp(BG, Math.min(t, 1));
-    colors.push(c.r, c.g, c.b);
-  }
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    vertexColors: true, roughness, metalness
-  }));
-}
-
 function buildRoom() {
   const rD = 9000;
   const ceilY = 350, floorY = -350;
 
-  // FLOOR — warm sand center, fades to bg at edges — no hard boundary
-  const floor = makeGradientPlane(10000, rD, 0xB8906A, 0.94, 0.03);
+  // FLOOR — warm dark sand, wide, no side walls
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0xA07848, roughness: 0.82, metalness: 0.08
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = floorY;
   roomScene.add(floor);
 
-  // CEILING — lighter warm, same dissolve
-  const ceil = makeGradientPlane(10000, rD, 0xD4B48A, 0.97, 0.0);
+  // FLOOR REFLECTION — polished surface catching strip light
+  const reflMat = new THREE.MeshStandardMaterial({
+    color: 0xFFCC88, roughness: 0.05, metalness: 0.2,
+    transparent: true, opacity: 0.15
+  });
+  const refl = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), reflMat);
+  refl.rotation.x = -Math.PI / 2;
+  refl.position.y = floorY + 1;
+  roomScene.add(refl);
+
+  // CEILING — wide, no walls
+  const ceilMat = new THREE.MeshStandardMaterial({
+    color: 0xC8A070, roughness: 0.96
+  });
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(8000, rD), ceilMat);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
-  // NO SIDE WALLS — open infinite space
+  // NO SIDE WALLS — open infinite space, fog fills the void
 
-  // CEILING STRIPS — warm amber emissive
-  [-260, 260].forEach(x => {
+  // CEILING LIGHT STRIPS — 5 pairs converging to vanishing point
+  // Spread across ceiling width so they frame without walls
+  const stripXs = [-480, -280, -80, 80, 280, 480];
+  stripXs.forEach(x => {
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xFFCCA0, emissive: new THREE.Color(0xFFCCA0),
-      emissiveIntensity: 3.5, roughness: 0.05
+      color: 0xFFFFEE,
+      emissive: new THREE.Color(0xFFFFEE),
+      emissiveIntensity: 10.0,
+      roughness: 0.0
     });
-    const s = new THREE.Mesh(new THREE.BoxGeometry(10, 5, rD * 0.95), mat);
-    s.position.set(x, ceilY - 5, 0);
-    roomScene.add(s);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(4, 3, rD * 0.96), mat);
+    strip.position.set(x, ceilY - 3, -rD * 0.02);
+    roomScene.add(strip);
+
+    // Floor reflection of each strip
+    const rmat = new THREE.MeshStandardMaterial({
+      color: 0xFFFFCC,
+      emissive: new THREE.Color(0xFFFFCC),
+      emissiveIntensity: 2.0,
+      roughness: 0.0,
+      transparent: true, opacity: 0.3
+    });
+    const rstrip = new THREE.Mesh(new THREE.BoxGeometry(3, 1, rD * 0.7), rmat);
+    rstrip.position.set(x, floorY + 2, -rD * 0.1);
+    roomScene.add(rstrip);
+
+    // Point light under each strip
+    const pl = new THREE.PointLight(0xFFCC77, 0.6, 1200);
+    pl.position.set(x, ceilY - 40, 0);
+    roomScene.add(pl);
   });
 
-  // CEILING DISCS + POINT LIGHTS
-  const dg = new THREE.CircleGeometry(34, 32);
+  // CEILING DISCS
+  const dg = new THREE.CircleGeometry(28, 32);
   const dm = new THREE.MeshStandardMaterial({
-    color: 0xFFCCA0, emissive: new THREE.Color(0xFFCCA0),
-    emissiveIntensity: 3.0, roughness: 0.05
+    color: 0xFFFFEE, emissive: new THREE.Color(0xFFFFEE),
+    emissiveIntensity: 8.0, roughness: 0.0
   });
-  [-200, -800, -1400, -2000, -2600, -3200, -3800].forEach(z => {
-    [-260, 260].forEach(x => {
+  [-480, -280, -80, 80, 280, 480].forEach(x => {
+    [-150, -700, -1300, -2000, -2800].forEach(z => {
       const d = new THREE.Mesh(dg, dm);
       d.rotation.x = Math.PI / 2;
-      d.position.set(x, ceilY - 2, z);
+      d.position.set(x, ceilY - 1, z);
       roomScene.add(d);
-      const pl = new THREE.PointLight(0xFFAA66, 1.0, 800);
-      pl.position.set(x, ceilY - 30, z);
-      roomScene.add(pl);
     });
   });
 
   // LIGHTS
-  roomScene.add(new THREE.AmbientLight(0xFFBB88, 0.45));
-  const main = new THREE.PointLight(0xFFAA55, 1.8, 2500);
-  main.position.set(0, 280, -200); roomScene.add(main);
-  const vp = new THREE.PointLight(0xFFCC88, 1.5, 2500);
-  vp.position.set(0, 80, -1000); roomScene.add(vp);
-  const ff = new THREE.PointLight(0xFFBB99, 0.5, 900);
-  ff.position.set(0, 100, 600); roomScene.add(ff);
-  const bn = new THREE.PointLight(0xB87848, 0.4, 600);
-  bn.position.set(0, -300, 0); roomScene.add(bn);
+  // Low ambient — room is primarily lit by strips and vanishing point
+  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.25));
 
-  // SIDE FOG PLANES — large transparent planes at sides to fake fog density
-  const fogMat = new THREE.MeshBasicMaterial({
-    color: 0xE8D5BC, transparent: true, opacity: 0.0,
-    side: THREE.DoubleSide, depthWrite: false
+  // Main warm overhead
+  const main = new THREE.PointLight(0xFFBB55, 2.0, 3000);
+  main.position.set(0, 350, -200);
+  roomScene.add(main);
+
+  // VANISHING POINT RADIAL BLOOM
+  // Bright center, fades radially — this is the "glow" in the reference
+  // Multiple stacked lights at increasing depth, each dimmer
+  const vpLights = [
+    { z: -600,  intensity: 4.0, dist: 1800, color: 0xFFEE99 },
+    { z: -1000, intensity: 5.0, dist: 2000, color: 0xFFFF99 },
+    { z: -1500, intensity: 4.0, dist: 1800, color: 0xFFFFAA },
+    { z: -2000, intensity: 3.0, dist: 1500, color: 0xFFFFBB },
+  ];
+  vpLights.forEach(l => {
+    const pl = new THREE.PointLight(l.color, l.intensity, l.dist);
+    pl.position.set(0, 60, l.z);
+    roomScene.add(pl);
   });
-  // These are invisible but their presence helps the fog calculation
-  // Instead use additional point lights at sides with fog color to wash out edges
-  const sideWashL = new THREE.PointLight(0xE8D5BC, 3.0, 600);
-  sideWashL.position.set(-900, 0, 0); roomScene.add(sideWashL);
-  const sideWashR = new THREE.PointLight(0xE8D5BC, 3.0, 600);
-  sideWashR.position.set(900, 0, 0); roomScene.add(sideWashR);
-  // Also wash out the back
-  const backWash = new THREE.PointLight(0xE8D5BC, 2.0, 500);
-  backWash.position.set(0, 0, -2600); roomScene.add(backWash);
+
+  // Camera near fill — warm front light
+  const near = new THREE.PointLight(0xFFCC99, 0.5, 900);
+  near.position.set(0, 100, 500);
+  roomScene.add(near);
+
+  // Floor bounce
+  const bounce = new THREE.PointLight(0xC8944A, 0.4, 700);
+  bounce.position.set(0, -300, 0);
+  roomScene.add(bounce);
 }
 
 function buildGarments() {
@@ -145,12 +170,14 @@ function buildGarments() {
   ];
 
   const loader = new THREE.TextureLoader();
-  const lm = new THREE.LineBasicMaterial({ color: 0xC8906A, transparent: true, opacity: 0.4 });
+  const lm = new THREE.LineBasicMaterial({
+    color: 0xC8A070, transparent: true, opacity: 0.45
+  });
 
   gData.forEach(g => {
     const w = g.w * SCALE, h = g.h * SCALE;
     const mat = new THREE.MeshStandardMaterial({
-      color: g.color || 0xC44C18, roughness: 0.8,
+      color: 0xC44C18, roughness: 0.8,
       transparent: true, opacity: 0.93,
       side: THREE.DoubleSide, alphaTest: 0.1
     });
@@ -184,7 +211,7 @@ function buildGrain() {
     const d = id.data;
     for (let i = 0; i < d.length; i += 4) {
       const v = Math.random() * 255;
-      d[i] = Math.min(255, v+12); d[i+1] = Math.min(255, v+5);
+      d[i] = Math.min(255,v+12); d[i+1] = Math.min(255,v+5);
       d[i+2] = Math.round(v*0.8); d[i+3] = 255;
     }
     gctx.putImageData(id, 0, 0);
@@ -194,7 +221,7 @@ function buildGrain() {
 
 function startRoomLoop() {
   const SZ = 700, EZ = 100, DUR = 8000;
-  function eq(t) { return t < 0.5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2, 4)/2; }
+  function eq(t) { return t < 0.5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2,4)/2; }
 
   function animate(now) {
     requestAnimationFrame(animate);
