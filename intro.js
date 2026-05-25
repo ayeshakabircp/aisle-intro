@@ -71,9 +71,9 @@ function resetAll(){
     el.classList.remove('show');placeG(id,i);
     el.style.transform='';el.style.opacity='';
   });
-  // Restore garment layer
+  // Keep garment layer hidden always
   const layer=document.getElementById('garment-layer');
-  layer.style.transition='none';layer.style.opacity='1';
+  layer.style.transition='none';layer.style.opacity="0";
   const s3=document.getElementById('s3-line');
   s3.classList.remove('show');s3.style.cssText='';
   document.getElementById('word-display').textContent='';
@@ -95,6 +95,7 @@ function startMarquee(onExit){
 }
 
 function runIntro(){
+  document.getElementById("garment-layer").style.opacity="0";
   let c=0;
   POSITIONS=generatePositions();
   ALL_IDS.forEach((id,i)=>placeG(id,i));
