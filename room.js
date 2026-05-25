@@ -191,7 +191,7 @@ function buildRoom() {
     // Try loading texture
     const imgIndex = (Math.abs(g.x + g.z) % 7) + 1;
     loader.load(
-      `/garments/dress${imgIndex}.png`,
+      `/dress${imgIndex}.png`,
       tex => { mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true; },
       undefined,
       () => {} // fail silently, keep color
