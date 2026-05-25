@@ -20,7 +20,7 @@ function initRoom() {
 
   // Exponential fog — very low density, translucent not opaque
   // You see through it, it just adds warm atmospheric haze
-  roomScene.fog = new THREE.FogExp2(0xE2C89A, 0.0012);
+  roomScene.fog = new THREE.FogExp2(0xE2C89A, 0.0007);
 
   roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -115,7 +115,7 @@ function buildRoom() {
 
   // LIGHTS
   // Low ambient — room is primarily lit by strips and vanishing point
-  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.25));
+  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.18));
 
   // Main warm overhead
   const main = new THREE.PointLight(0xFFBB55, 2.0, 3000);
@@ -136,6 +136,11 @@ function buildRoom() {
     pl.position.set(0, 60, l.z);
     roomScene.add(pl);
   });
+
+  // GARMENT LIGHT — dedicated front light to make garments pop
+  const gLight = new THREE.PointLight(0xFFEEDD, 1.2, 1500);
+  gLight.position.set(0, 200, 400);
+  roomScene.add(gLight);
 
   // Camera near fill — warm front light
   const near = new THREE.PointLight(0xFFCC99, 0.5, 900);
@@ -177,12 +182,19 @@ function buildGarments() {
   gData.forEach(g => {
     const w = g.w * SCALE, h = g.h * SCALE;
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xC44C18, roughness: 0.8,
-      transparent: true, opacity: 0.93,
-      side: THREE.DoubleSide, alphaTest: 0.1
+      color: 0x7A3010, roughness: 0.8,
+      transparent: true, opacity: 0.95,
+      side: THREE.DoubleSide, alphaTest: 0.08
     });
     loader.load(`/dress${g.img}.png`,
-      tex => { mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true; },
+      tex => {
+        mat.map = tex;
+        mat.color.set(0xffffff);
+        // Boost contrast on the texture
+        mat.emissive = new THREE.Color(0x0a0805);
+        mat.emissiveIntensity = 0.15;
+        mat.needsUpdate = true;
+      },
       undefined, () => {}
     );
     const topY = ceilY - g.tLen;
