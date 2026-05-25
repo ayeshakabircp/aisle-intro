@@ -1,5 +1,5 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #C8935A; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #8B5A2B; }
 
 /* LAYER 1 — BG image wrap, overflow hidden for scale push */
 #room-bg-wrap {
