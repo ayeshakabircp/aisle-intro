@@ -50,7 +50,16 @@ function animateS3Fall(){
   fallingRAFs.push(requestAnimationFrame(step));
 }
 
-function fallAll(){ALL_IDS.forEach((id,i)=>animateFall(id,i*10));animateS3Fall();}
+function fallAll(){
+  ALL_IDS.forEach((id,i)=>animateFall(id,i*10));
+  animateS3Fall();
+  // Fade out entire garment layer after drop completes
+  setTimeout(()=>{
+    const layer=document.getElementById('garment-layer');
+    layer.style.transition='opacity 0.6s ease';
+    layer.style.opacity='0';
+  }, 800);
+}
 
 function resetAll(){
   introTimers.forEach(clearTimeout);introTimers=[];
@@ -62,6 +71,9 @@ function resetAll(){
     el.classList.remove('show');placeG(id,i);
     el.style.transform='';el.style.opacity='';
   });
+  // Restore garment layer
+  const layer=document.getElementById('garment-layer');
+  layer.style.transition='none';layer.style.opacity='1';
   const s3=document.getElementById('s3-line');
   s3.classList.remove('show');s3.style.cssText='';
   document.getElementById('word-display').textContent='';
@@ -70,7 +82,7 @@ function resetAll(){
   document.getElementById('aisle-reveal').classList.remove('show');
   document.getElementById('scroll-ind').classList.remove('show');
   document.getElementById('replay-btn').classList.remove('show');
-  roomT0=null; // reset room camera too
+  roomT0=null;
 }
 
 function startMarquee(onExit){
