@@ -14,13 +14,13 @@ async function initRoom() {
   roomRenderer.setSize(W, H);
   roomRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  roomRenderer.toneMappingExposure = 1.6;
+  roomRenderer.toneMappingExposure = 1.0;
   roomRenderer.shadowMap.enabled = false;
 
   roomScene = new THREE.Scene();
-  roomScene.background = new THREE.Color(0xD4A870);
+  roomScene.background = new THREE.Color(0x8B5A2B);
   // Dense warm fog — vanishing point glows and dissolves
-  roomScene.fog = new THREE.Fog(0xFFDDA0, 400, 3200);
+  roomScene.fog = new THREE.Fog(0xC8844A, 300, 2600);
 
   roomCamera = new THREE.PerspectiveCamera(68, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -35,9 +35,9 @@ async function initRoom() {
     roomComposer.addPass(new RenderPass(roomScene, roomCamera));
     roomComposer.addPass(new UnrealBloomPass(
       new THREE.Vector2(W, H),
-      1.8,  // strength — aggressive bloom
-      0.9,  // radius
-      0.08  // threshold — almost everything blooms
+      0.6,  // strength — subtle
+      0.5,  // radius
+      0.25  // threshold
     ));
   } catch(e) { console.warn('Bloom unavailable'); }
 
@@ -53,7 +53,7 @@ function buildRoom() {
 
   // FLOOR — warm sand with subtle texture via color variation
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0xB89060, roughness: 0.75, metalness: 0.12
+    color: 0x6B4423, roughness: 0.75, metalness: 0.12
   });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), floorMat);
   floor.rotation.x = -Math.PI / 2;
@@ -71,14 +71,14 @@ function buildRoom() {
   roomScene.add(refl);
 
   // CEILING
-  const ceilMat = new THREE.MeshStandardMaterial({ color: 0xD4AA70, roughness: 0.95 });
+  const ceilMat = new THREE.MeshStandardMaterial({ color: 0x8B6235, roughness: 0.95 });
   const ceil = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), ceilMat);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
   // SIDE WALLS — subtle, warm, just enough to frame
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xCCAA78, roughness: 0.95 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x9B7245, roughness: 0.95 });
   const lw = new THREE.Mesh(new THREE.PlaneGeometry(rD, rH), wallMat);
   lw.rotation.y = Math.PI / 2; lw.position.x = -rW / 2;
   roomScene.add(lw);
@@ -109,7 +109,7 @@ function buildRoom() {
     roomScene.add(strip);
 
     // Light spilling down from each strip
-    const pl = new THREE.PointLight(0xFFCC66, 0.8, 1400);
+    const pl = new THREE.PointLight(0xFFCC66, 0.5, 1000);
     pl.position.set(x, ceilY - 40, 0);
     roomScene.add(pl);
   });
@@ -133,9 +133,9 @@ function buildRoom() {
   // Multiple point lights deep in the scene build up the golden glow
 
   // SCENE LIGHTS
-  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.3));
+  roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.15));
 
-  const main = new THREE.PointLight(0xFFBB44, 3.5, 3000);
+  const main = new THREE.PointLight(0xFFBB44, 2.0, 2500);
   main.position.set(0, 400, -200);
   roomScene.add(main);
 
