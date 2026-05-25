@@ -5,14 +5,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #C8935A; }
 #room-bg-wrap {
   position: fixed; inset: 0; z-index: 1;
   overflow: hidden;
-}
-#room-bg {
-  width: 100%; height: 100%;
-  object-fit: cover;
+  background-image: url('/room-bg.png');
+  background-size: cover;
+  background-position: center center;
   transform: scale(1.0) translateZ(0);
   transform-origin: center center;
   will-change: transform;
 }
+#room-bg { display: none; }
 
 /* LAYER 2 — Three.js canvas, transparent */
 #room-canvas {
