@@ -18,9 +18,9 @@ async function initRoom() {
   roomRenderer.shadowMap.enabled = false;
 
   roomScene = new THREE.Scene();
-  roomScene.background = new THREE.Color(0xE8A050);
+  roomScene.background = new THREE.Color(0xD4A870);
   // Dense warm fog — vanishing point glows and dissolves
-  roomScene.fog = new THREE.Fog(0xFFCC66, 300, 2800);
+  roomScene.fog = new THREE.Fog(0xFFDDA0, 400, 3200);
 
   roomCamera = new THREE.PerspectiveCamera(68, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -53,7 +53,7 @@ function buildRoom() {
 
   // FLOOR — warm sand with subtle texture via color variation
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0xA06830, roughness: 0.75, metalness: 0.12
+    color: 0xB89060, roughness: 0.75, metalness: 0.12
   });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), floorMat);
   floor.rotation.x = -Math.PI / 2;
@@ -71,14 +71,14 @@ function buildRoom() {
   roomScene.add(refl);
 
   // CEILING
-  const ceilMat = new THREE.MeshStandardMaterial({ color: 0xC89050, roughness: 0.95 });
+  const ceilMat = new THREE.MeshStandardMaterial({ color: 0xD4AA70, roughness: 0.95 });
   const ceil = new THREE.Mesh(new THREE.PlaneGeometry(rW * 2, rD), ceilMat);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
   // SIDE WALLS — subtle, warm, just enough to frame
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xC09060, roughness: 0.95 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xCCAA78, roughness: 0.95 });
   const lw = new THREE.Mesh(new THREE.PlaneGeometry(rD, rH), wallMat);
   lw.rotation.y = Math.PI / 2; lw.position.x = -rW / 2;
   roomScene.add(lw);
@@ -129,21 +129,8 @@ function buildRoom() {
     roomScene.add(refl);
   });
 
-  // VANISHING POINT GLOW — dense golden mist at far end
-  // Stacked planes of decreasing opacity building up brightness
-  [0.55, 0.35, 0.2, 0.12].forEach((opacity, i) => {
-    const size = 800 + i * 600;
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xFFDD88,
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size * 0.6), mat);
-    plane.position.set(0, 40, -1200 - i * 200);
-    roomScene.add(plane);
-  });
+  // VANISHING POINT GLOW — pure light, no geometry planes
+  // Multiple point lights deep in the scene build up the golden glow
 
   // SCENE LIGHTS
   roomScene.add(new THREE.AmbientLight(0xFFCC88, 0.3));
@@ -153,13 +140,12 @@ function buildRoom() {
   roomScene.add(main);
 
   // Strong vanishing point pull light
-  const vp1 = new THREE.PointLight(0xFFEE88, 5.0, 2500);
-  vp1.position.set(0, 80, -900);
-  roomScene.add(vp1);
-
-  const vp2 = new THREE.PointLight(0xFFFFAA, 3.0, 1500);
-  vp2.position.set(0, 60, -1400);
-  roomScene.add(vp2);
+  const vp1 = new THREE.PointLight(0xFFEE88, 6.0, 3000);
+  vp1.position.set(0, 80, -800); roomScene.add(vp1);
+  const vp2 = new THREE.PointLight(0xFFFFAA, 4.0, 2000);
+  vp2.position.set(0, 60, -1200); roomScene.add(vp2);
+  const vp3 = new THREE.PointLight(0xFFFFCC, 3.0, 1200);
+  vp3.position.set(0, 40, -1600); roomScene.add(vp3);
 
   const dir = new THREE.DirectionalLight(0xFFAA44, 1.0);
   dir.position.set(400, 300, 200);
