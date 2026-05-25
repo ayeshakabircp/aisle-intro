@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aisle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@600;800&family=Italiana&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div id="intro-scene">
+    <button id="replay-btn" onclick="replayIntro()">↺ Replay</button>
+    <div id="garment-layer">
+      <svg id="gsvg" width="100%" height="100%" viewBox="0 0 680 600" xmlns="http://www.w3.org/2000/svg">
+        <defs><style>
+          .gf{fill:#EDE8DF;stroke:#1a1a1a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+          .gs{fill:none;stroke:#1a1a1a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+          .gl{fill:none;stroke:#1a1a1a;stroke-width:1.3;stroke-linecap:round;}
+          .gitem{opacity:0;transition:opacity 0.12s ease;}
+          .gitem.show{opacity:1;}
+        </style></defs>
+        <g class="gitem" id="g1"><path class="gf" d="M18,0 L0,22 L13,27 L13,80 L57,80 L57,27 L70,22 L52,0 L43,14 Q35,19 27,14Z"/><path class="gs" d="M27,14 Q35,7 43,14"/><line class="gl" x1="13" y1="40" x2="57" y2="40"/><line class="gl" x1="13" y1="53" x2="57" y2="53"/><line class="gl" x1="13" y1="66" x2="57" y2="66"/></g>
+        <g class="gitem" id="g2"><path class="gf" d="M22,0 Q31,5 40,0 L52,20 L40,24 L43,98 L19,98 L22,24 L10,20Z"/><path class="gs" d="M19,98 Q31,108 43,98"/><line class="gl" x1="21" y1="40" x2="41" y2="40"/><line class="gl" x1="20" y1="55" x2="42" y2="55"/><line class="gl" x1="19" y1="70" x2="43" y2="70"/><line class="gl" x1="19" y1="84" x2="43" y2="84"/></g>
+        <g class="gitem" id="g3"><path class="gf" d="M22,0 L0,28 L18,36 L16,90 L74,90 L72,36 L90,28 L68,0 L56,16 Q45,22 34,16Z"/><path class="gs" d="M34,16 Q45,9 56,16"/><polyline class="gl" points="18,50 25,44 32,50 39,44 46,50 53,44 60,50 67,44 72,50"/><polyline class="gl" points="18,62 25,56 32,62 39,56 46,62 53,56 60,62 67,56 72,62"/><polyline class="gl" points="18,74 25,68 32,74 39,68 46,74 53,68 60,74 67,68 72,74"/></g>
+        <g class="gitem" id="g4"><path class="gf" d="M14,0 L0,17 L11,21 L11,60 L54,60 L54,21 L65,17 L51,0 L42,12 Q32,16 22,12Z"/><path class="gs" d="M22,12 Q32,5 42,12"/><circle class="gf" cx="22" cy="35" r="3.5"/><circle class="gf" cx="32" cy="35" r="3.5"/><circle class="gf" cx="42" cy="35" r="3.5"/><circle class="gf" cx="27" cy="48" r="3.5"/><circle class="gf" cx="37" cy="48" r="3.5"/></g>
+        <g class="gitem" id="g5"><path class="gf" d="M26,0 L4,23 L0,50 L18,43 L16,102 L74,102 L72,43 L90,50 L86,23 L64,0 L53,20 Q45,26 37,20Z"/><path class="gs" d="M37,20 Q45,13 53,20"/><line class="gs" x1="45" y1="26" x2="45" y2="102"/><line class="gl" x1="18" y1="58" x2="43" y2="58"/><line class="gl" x1="18" y1="70" x2="43" y2="70"/><circle class="gs" cx="32" cy="82" r="3.5"/><circle class="gs" cx="32" cy="93" r="3.5"/></g>
+        <g class="gitem" id="g6"><path class="gf" d="M8,0 L0,82 Q33,94 66,82 L57,0Z"/><line class="gl" x1="10" y1="22" x2="55" y2="22"/><line class="gl" x1="7" y1="42" x2="58" y2="42"/><line class="gl" x1="4" y1="60" x2="61" y2="60"/><line class="gl" x1="2" y1="75" x2="63" y2="75"/></g>
+        <g class="gitem" id="g7"><path class="gf" d="M0,0 L4,112 L34,112 L42,56 L50,112 L80,112 L84,0Z"/><line class="gl" x1="40" y1="0" x2="44" y2="52"/><line class="gl" x1="4" y1="32" x2="80" y2="32"/><line class="gl" x1="6" y1="55" x2="38" y2="55"/><line class="gl" x1="46" y1="55" x2="78" y2="55"/></g>
+        <g class="gitem" id="g8"><path class="gf" d="M25,0 L4,24 L0,56 L20,47 L18,122 L72,122 L70,47 L90,56 L86,24 L65,0 L54,18 Q45,24 36,18Z"/><path class="gs" d="M36,18 Q45,11 54,18"/><line class="gs" x1="45" y1="24" x2="45" y2="122"/><line class="gl" x1="20" y1="66" x2="43" y2="66"/><line class="gl" x1="20" y1="80" x2="43" y2="80"/><circle class="gs" cx="34" cy="95" r="4"/><circle class="gs" cx="34" cy="107" r="4"/></g>
+        <g class="gitem" id="g9"><path class="gf" d="M20,0 Q30,5 40,0 L52,19 L40,24 L42,88 L18,88 L20,24 L8,19Z"/><path class="gs" d="M18,88 Q30,96 42,88"/><polyline class="gl" points="20,38 26,32 32,38 38,32 40,38"/><polyline class="gl" points="20,52 26,46 32,52 38,46 40,52"/><polyline class="gl" points="20,66 26,60 32,66 38,60 40,66"/><polyline class="gl" points="20,78 26,72 32,78 38,72 40,78"/></g>
+        <g class="gitem" id="g10"><path class="gf" d="M24,0 L3,21 L0,46 L17,39 L15,108 L75,108 L73,39 L90,46 L87,21 L66,0 L55,18 Q45,23 35,18Z"/><path class="gs" d="M35,18 Q45,11 55,18"/><line class="gs" x1="45" y1="24" x2="45" y2="108"/><line class="gl" x1="17" y1="54" x2="43" y2="54"/><line class="gl" x1="17" y1="68" x2="43" y2="68"/><rect class="gs" x="28" y="78" width="10" height="8" rx="1"/><circle class="gs" cx="35" cy="94" r="3.5"/></g>
+        <g class="gitem" id="g11"><path class="gf" d="M22,0 L2,25 L0,52 L16,44 L14,102 L76,102 L74,44 L90,52 L88,25 L68,0 L56,18 Q45,23 34,18Z"/><path class="gs" d="M34,18 Q45,11 56,18"/><line class="gs" x1="45" y1="24" x2="45" y2="102"/><polyline class="gl" points="16,60 22,54 28,60 34,54 43,60"/><polyline class="gl" points="16,73 22,67 28,73 34,67 43,73"/><polyline class="gl" points="16,86 22,80 28,86 34,80 43,86"/></g>
+        <g class="gitem" id="g12"><path class="gf" d="M5,0 L0,92 L10,128 L32,128 L38,66 L44,128 L58,128 L62,92 L68,0Z"/><line class="gl" x1="36" y1="0" x2="40" y2="62"/><line class="gl" x1="6" y1="30" x2="62" y2="30"/><line class="gl" x1="4" y1="52" x2="36" y2="52"/><line class="gl" x1="42" y1="52" x2="66" y2="52"/></g>
+        <g class="gitem" id="g13"><path class="gf" d="M16,0 L0,20 L12,25 L12,72 L52,72 L52,25 L64,20 L48,0 L40,13 Q32,17 24,13Z"/><path class="gs" d="M24,13 Q32,6 40,13"/><line class="gl" x1="12" y1="36" x2="52" y2="36"/><line class="gl" x1="12" y1="50" x2="52" y2="50"/><line class="gl" x1="12" y1="62" x2="52" y2="62"/></g>
+        <g class="gitem" id="g14"><path class="gf" d="M10,0 L0,98 Q32,110 64,98 L54,0Z"/><line class="gl" x1="12" y1="28" x2="52" y2="28"/><line class="gl" x1="9" y1="48" x2="55" y2="48"/><line class="gl" x1="6" y1="68" x2="58" y2="68"/><line class="gl" x1="3" y1="84" x2="61" y2="84"/></g>
+        <g class="gitem" id="g15"><path class="gf" d="M20,0 L2,27 L0,54 L17,46 L15,118 L65,118 L63,46 L80,54 L78,27 L60,0 L50,17 Q40,22 30,17Z"/><path class="gs" d="M30,17 Q40,10 50,17"/><line class="gs" x1="40" y1="23" x2="40" y2="118"/><line class="gl" x1="17" y1="62" x2="38" y2="62"/><line class="gl" x1="17" y1="76" x2="38" y2="76"/></g>
+        <g class="gitem" id="g16"><path class="gf" d="M18,0 Q28,5 38,0 L48,17 L38,21 L40,84 L16,84 L18,21 L8,17Z"/><polyline class="gl" points="18,35 23,29 28,35 33,29 38,35"/><polyline class="gl" points="18,48 23,42 28,48 33,42 38,48"/><polyline class="gl" points="18,61 23,55 28,61 33,55 38,61"/><polyline class="gl" points="18,74 23,68 28,74 33,68 38,74"/></g>
+        <g class="gitem" id="g17"><path class="gf" d="M0,0 L3,102 L30,102 L38,52 L46,102 L72,102 L75,0Z"/><line class="gl" x1="37" y1="0" x2="40" y2="48"/><line class="gl" x1="4" y1="34" x2="70" y2="34"/><line class="gl" x1="5" y1="57" x2="35" y2="57"/><line class="gl" x1="42" y1="57" x2="70" y2="57"/></g>
+        <g class="gitem" id="g18"><path class="gf" d="M22,0 L0,26 L15,33 L13,97 L67,97 L65,33 L80,26 L58,0 L48,16 Q40,21 32,16Z"/><path class="gs" d="M32,16 Q40,9 48,16"/><polyline class="gl" points="15,52 22,46 29,52 36,46 43,52 50,46 57,52 63,46 65,52"/><polyline class="gl" points="15,65 22,59 29,65 36,59 43,65 50,59 57,65 63,59 65,65"/><polyline class="gl" points="15,78 22,72 29,78 36,72 43,78 50,72 57,78 63,72 65,78"/><polyline class="gl" points="15,90 22,84 29,90 36,84 43,90 50,84 57,90 63,84 65,90"/></g>
+      </svg>
+    </div>
+    <div id="headline"><div id="word-display"></div></div>
+    <div id="s3-line">And never the right size.</div>
+    <div id="intro-wrap">
+      <div id="marquee-track"><div id="marquee-inner"><span class="mword">Introducing</span></div></div>
+      <div id="aisle-reveal">
+        <div id="aisle-name">Aisle</div>
+        <div id="aisle-sub">Your in-store personal assistant.</div>
+        <div id="scroll-ind">
+          <div class="si-label">scroll</div>
+          <div class="si-track"></div>
+          <div class="si-arrow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="room-scene">
+    <canvas id="room-canvas"></canvas>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="intro.js"></script>
+  <script src="grain.js"></script>
+  <script src="room.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
