@@ -20,7 +20,7 @@ function initRoom() {
 
   // Exponential fog — very low density, translucent not opaque
   // You see through it, it just adds warm atmospheric haze
-  roomScene.fog = new THREE.FogExp2(0xE8D0A0, 0.00035);
+  roomScene.fog = new THREE.FogExp2(0xE2C89A, 0.00028);
 
   roomCamera = new THREE.PerspectiveCamera(72, W / H, 1, 8000);
   roomCamera.position.set(0, 60, 700);
@@ -64,7 +64,17 @@ function buildRoom() {
   ceil.position.y = ceilY;
   roomScene.add(ceil);
 
-  // NO SIDE WALLS — open infinite space, fog fills the void
+  // SIDE FILL PLANES — same color as bg, seamlessly fill the void
+  // These are NOT visible walls — they're bg-colored fills that make
+  // the space feel infinite by matching the scene background exactly
+  const sideFillMat = new THREE.MeshBasicMaterial({ color: 0xE2C89A, side: THREE.DoubleSide });
+  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(rD, 2000), sideFillMat);
+  sideL.rotation.y = Math.PI / 2; sideL.position.x = -1200; roomScene.add(sideL);
+  const sideR = new THREE.Mesh(new THREE.PlaneGeometry(rD, 2000), sideFillMat);
+  sideR.rotation.y = -Math.PI / 2; sideR.position.x = 1200; roomScene.add(sideR);
+  // Back fill
+  const backFill = new THREE.Mesh(new THREE.PlaneGeometry(8000, 2000), sideFillMat);
+  backFill.position.z = -4000; roomScene.add(backFill);
 
   // CEILING LIGHT STRIPS — 5 pairs converging to vanishing point
   // Spread across ceiling width so they frame without walls
@@ -126,10 +136,10 @@ function buildRoom() {
   // Bright center, fades radially — this is the "glow" in the reference
   // Multiple stacked lights at increasing depth, each dimmer
   const vpLights = [
-    { z: -600,  intensity: 4.0, dist: 1800, color: 0xFFEE99 },
-    { z: -1000, intensity: 5.0, dist: 2000, color: 0xFFFF99 },
-    { z: -1500, intensity: 4.0, dist: 1800, color: 0xFFFFAA },
-    { z: -2000, intensity: 3.0, dist: 1500, color: 0xFFFFBB },
+    { z: -600,  intensity: 2.5, dist: 1600, color: 0xFFEECC },
+    { z: -1000, intensity: 3.0, dist: 1800, color: 0xFFEECC },
+    { z: -1500, intensity: 2.5, dist: 1600, color: 0xFFEEDD },
+    { z: -2000, intensity: 2.0, dist: 1400, color: 0xFFEEDD },
   ];
   vpLights.forEach(l => {
     const pl = new THREE.PointLight(l.color, l.intensity, l.dist);
