@@ -8,13 +8,12 @@ const roomGarmentMeshes = [], roomThreadGeos = [];
 
 function initRoom() {
   // ── BACKGROUND IMAGE PUSH ──
-  // Image is served from /room-bg.png in the repo root
-  const bg = document.getElementById('room-bg');
-  if (bg) {
-    // Trigger the CSS scale animation after a frame
+  // Scale the wrap div (which has bg-image) for quality
+  const bgWrap = document.getElementById('room-bg-wrap');
+  if (bgWrap) {
     requestAnimationFrame(() => {
-      bg.style.transition = 'transform 8s cubic-bezier(0.25,0.1,0.1,1)';
-      bg.style.transform = 'scale(1.18) translateZ(0)';
+      bgWrap.style.transition = 'transform 8s cubic-bezier(0.25,0.1,0.1,1)';
+      bgWrap.style.transform = 'scale(1.18) translateZ(0)';
     });
   }
 
@@ -146,10 +145,16 @@ function startRoomLoop() {
       const s = Math.sin(tt + mesh.userData.sway) * 2.0;
       mesh.position.x = mesh.userData.baseX + s;
       mesh.rotation.z = s * 0.0016;
+
+      // PARALLAX — garments closer to camera (higher z) drift down
+      // as camera pushes forward, reinforcing depth perception
+      const depthFactor = 1 - (Math.abs(mesh.userData.baseZ) / 3000);
+      mesh.position.y = mesh.userData.baseY - p * depthFactor * 30;
+
       const tg = roomThreadGeos[i];
       tg.geo.setFromPoints([
         new THREE.Vector3(mesh.position.x, tg.ceilY, tg.baseZ),
-        new THREE.Vector3(mesh.position.x, tg.garmentTopY, tg.baseZ)
+        new THREE.Vector3(mesh.position.x, tg.garmentTopY + (mesh.position.y - mesh.userData.baseY), tg.baseZ)
       ]);
     });
 
