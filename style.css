@@ -1,31 +1,44 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #C8935A; }
 
-/* LAYER 1 — Three.js canvas, full screen behind everything */
+/* LAYER 1 — BG image wrap, overflow hidden for scale push */
+#room-bg-wrap {
+  position: fixed; inset: 0; z-index: 1;
+  overflow: hidden;
+}
+#room-bg {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scale(1.0) translateZ(0);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* LAYER 2 — Three.js canvas, transparent */
 #room-canvas {
   position: fixed; inset: 0;
   width: 100% !important; height: 100% !important;
-  z-index: 1;
+  z-index: 2; pointer-events: none;
 }
 
-/* LAYER 2 — Grain */
+/* LAYER 3 — Grain */
 #grain-canvas {
   position: fixed; inset: 0;
   width: 100%; height: 100%;
-  z-index: 2; pointer-events: none; opacity: 0.04;
+  z-index: 3; pointer-events: none; opacity: 0.04;
 }
 
-/* LAYER 3 — SVG 2D garments */
+/* LAYER 4 — SVG garments */
 #garment-layer {
   position: fixed; inset: 0;
-  z-index: 3; pointer-events: none;
+  z-index: 4; pointer-events: none;
 }
 
-/* LAYER 4 — Word text */
+/* LAYER 5 — Word text */
 #headline {
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 4; pointer-events: none;
+  z-index: 5; pointer-events: none;
   text-align: center; width: 90%;
 }
 #word-display {
@@ -33,9 +46,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
   font-family: 'Urbanist', sans-serif;
   min-height: 90px; display: flex; align-items: center; justify-content: center;
   transition: opacity 0.15s ease; line-height: 1.1;
-  text-shadow: 0 2px 40px rgba(0,0,0,0.15);
+  text-shadow: 0 2px 40px rgba(0,0,0,0.2);
 }
-
 #s3-line {
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, calc(-50% + 12px));
@@ -43,19 +55,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
   font-size: 80px; font-weight: 600;
   font-family: 'Urbanist', sans-serif;
   color: #FAF0E0; line-height: 1.1;
-  opacity: 0; pointer-events: none; z-index: 4;
+  opacity: 0; pointer-events: none; z-index: 5;
   transition: opacity 0.4s ease, transform 0.4s ease;
   white-space: nowrap;
-  text-shadow: 0 2px 40px rgba(0,0,0,0.15);
+  text-shadow: 0 2px 40px rgba(0,0,0,0.2);
 }
 #s3-line.show { opacity: 1; transform: translate(-50%, -50%); }
 
-/* LAYER 5 — Introducing + Aisle */
+/* LAYER 6 — Intro wrap */
 #intro-wrap {
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  z-index: 5; opacity: 0; pointer-events: none;
+  z-index: 6; opacity: 0; pointer-events: none;
   transition: opacity 0.4s ease;
 }
 #intro-wrap.show { opacity: 1; }
@@ -72,7 +84,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
   font-size: 96px; font-weight: 800;
   color: #FFE8CC; letter-spacing: 6px;
   font-family: 'Urbanist', sans-serif;
-  opacity: 0.5; text-transform: uppercase;
+  opacity: 0.55; text-transform: uppercase;
   line-height: 1; padding: 0 60px;
 }
 
@@ -85,7 +97,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
   font-size: 132px; font-weight: 400; color: #FAF0E0;
   font-family: 'Italiana', Georgia, serif;
   letter-spacing: -1px; line-height: 1;
-  text-shadow: 0 4px 60px rgba(180,80,0,0.3);
+  text-shadow: 0 4px 60px rgba(100,40,0,0.4);
 }
 #aisle-sub {
   font-size: 28px; color: #FFD4A0;
@@ -120,9 +132,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
 @keyframes drip { 0% { top: -100%; } 100% { top: 120%; } }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 
-/* LAYER 6 — UI chrome */
+/* LAYER 7 — UI chrome */
 #replay-btn {
-  position: fixed; top: 20px; right: 20px; z-index: 6;
+  position: fixed; top: 20px; right: 20px; z-index: 7;
   background: transparent; border: 1px solid rgba(255,220,160,0.3);
   border-radius: 30px; padding: 8px 18px;
   font-size: 12px; color: #FFD4A0;
@@ -137,3 +149,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #FFD090; }
 }
 #replay-btn.show { opacity: 1; pointer-events: all; }
 #replay-btn:hover { background: rgba(255,220,160,0.1); }
+
+/* Hide SVG line illustration garments completely */
+#garment-layer { display: none !important; }
