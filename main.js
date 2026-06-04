@@ -1,3 +1,6 @@
-// main.js — boots room first, then intro on top
-initRoom(); // Three.js room starts immediately as background
-runIntro(); // word animation plays on top
+window._cameraFreeze = false;
+window._garmentDrop = false;
+window._frozenP = null;
+
+initRoom();
+runIntro();
