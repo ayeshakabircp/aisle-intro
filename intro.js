@@ -20,7 +20,7 @@ function showWord(text) {
   el.style.transform = 'translateY(6px)';
   setTimeout(() => {
     el.textContent = text;
-    el.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
   }, 260);
@@ -33,7 +33,7 @@ function showPhrase(text) {
   el.style.transform = 'translateY(6px)';
   setTimeout(() => {
     el.textContent = text;
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    el.style.transition = 'opacity 0.65s ease, transform 0.65s ease';
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
   }, 260);
@@ -46,94 +46,127 @@ function hideWord() {
   el.style.transform = 'translateY(-8px)';
 }
 
+function fadeIn(el, duration, delay) {
+  if (!el) return;
+  el.style.transition = 'none';
+  el.style.opacity = '0';
+  if (el.style.display === 'none') el.style.display = 'block';
+  setTimeout(() => {
+    el.style.transition = `opacity ${duration}s ease, transform ${duration}s ease`;
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }, delay || 50);
+}
+
+function fadeOut(el, duration) {
+  if (!el) return;
+  el.style.transition = `opacity ${duration}s ease`;
+  el.style.opacity = '0';
+}
+
 function runIntro() {
   clearAllTimers();
   window._cameraFreeze = false;
   window._garmentDrop = false;
   window._introComplete = false;
+  window._frozenP = null;
 
+  // Reset all
   const wordEl = document.getElementById('word-display');
   wordEl.style.cssText = 'opacity:0;transform:translateY(0);transition:none;';
   wordEl.textContent = '';
 
-  document.getElementById('s3-line').style.cssText = 'opacity:0;';
-  document.getElementById('intro-wrap').style.opacity = '0';
-  document.getElementById('aisle-reveal').style.opacity = '0';
   const introText = document.getElementById('introducing-text');
-  if (introText) { introText.style.opacity = '0'; introText.style.display = 'none'; }
+  if (introText) {
+    introText.style.cssText = 'opacity:0;transform:translateY(12px);display:none;';
+  }
+
+  const aisleReveal = document.getElementById('aisle-reveal');
+  aisleReveal.style.cssText = 'opacity:0;transform:translateY(0);transition:none;';
+
   const scrollInd = document.getElementById('scroll-ind');
-  if (scrollInd) scrollInd.style.opacity = '0';
+  if (scrollInd) scrollInd.style.cssText = 'opacity:0;transition:none;';
 
-  // S1 — Too(0) many(0.9) options(1.8)
+  document.getElementById('replay-btn').classList.remove('show');
+
+  // TIMING — all 0.9s gaps → 1.2s, all 1.2s gaps → 1.5s
+  // S1: Too(0) many(1.2) options(2.4)
   T(() => showWord('Too'),     0);
-  T(() => showWord('many'),    900);
-  T(() => showWord('options'), 1800);
+  T(() => showWord('many'),    1200);
+  T(() => showWord('options'), 2400);
 
-  // gap 1.2s → 3000
-  // S2 — Too(3.0) little(3.9) time(4.8)
-  T(() => showWord('Too'),     3000);
-  T(() => showWord('little'),  3900);
-  T(() => showWord('time'),    4800);
+  // gap 1.5s → 3900
+  // S2: Too(3.9) little(5.1) time(6.3)
+  T(() => showWord('Too'),     3900);
+  T(() => showWord('little'),  5100);
+  T(() => showWord('time'),    6300);
 
-  // gap 1.2s → 6000
-  // S3a — "And never"
-  T(() => showPhrase('And never'), 6000);
+  // gap 1.5s → 7800
+  // S3a: "And never"
+  T(() => showPhrase('And never'), 7800);
 
-  // 0.9s pause → 6900
-  // S3b — "the right size" + camera freeze
+  // 1.2s pause → 9000
+  // S3b: "the right size" + camera freeze
   T(() => {
     showPhrase('the right size');
     window._cameraFreeze = true;
-  }, 6900);
+  }, 9000);
 
-  // 1s camera freeze, word fades at 8200ms
-  T(() => hideWord(), 8200);
+  // Word fades at 10500ms
+  T(() => hideWord(), 10500);
 
-  // Garments drop at 8900ms
-  T(() => { window._garmentDrop = true; }, 8900);
+  // Garments drop at 11000ms
+  T(() => { window._garmentDrop = true; }, 11000);
 
-  // "Introducing" at 10200ms
+  // "Introducing" at 12500ms
   T(() => {
     const el = document.getElementById('introducing-text');
     if (!el) return;
     el.style.display = 'block';
-    el.style.transition = 'none';
-    el.style.opacity = '0';
     el.style.transform = 'translateY(12px)';
+    el.style.opacity = '0';
+    el.style.transition = 'none';
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.style.transition = 'opacity 1.2s ease, transform 1.2s ease';
+      el.style.transition = 'opacity 1.4s ease, transform 1.4s ease';
       el.style.opacity = '1';
       el.style.transform = 'translateY(0)';
     }));
-  }, 10200);
+  }, 12500);
 
-  // "Aisle" at 11800ms, Introducing fades
+  // "Aisle" at 14200ms — Introducing fades out as Aisle comes in
   T(() => {
     const aisle = document.getElementById('aisle-reveal');
-    aisle.style.transition = 'opacity 1.4s ease';
-    aisle.style.opacity = '1';
-    const intro = document.getElementById('introducing-text');
-    if (intro) {
-      setTimeout(() => {
+    aisle.style.transition = 'opacity 1.6s ease, transform 1.6s ease';
+    aisle.style.transform = 'translateY(8px)';
+    aisle.style.opacity = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      aisle.style.opacity = '1';
+      aisle.style.transform = 'translateY(0)';
+    }));
+
+    // Fade out Introducing
+    T(() => {
+      const intro = document.getElementById('introducing-text');
+      if (intro) {
         intro.style.transition = 'opacity 0.8s ease';
         intro.style.opacity = '0';
-      }, 400);
-    }
-  }, 11800);
+      }
+    }, 500);
+  }, 14200);
 
-  // Scroll indicator + replay at 13200ms
+  // Scroll indicator at 15800ms
   T(() => {
     const scrollInd = document.getElementById('scroll-ind');
     if (scrollInd) {
-      scrollInd.style.transition = 'opacity 0.6s ease';
+      scrollInd.style.transition = 'opacity 0.8s ease';
       scrollInd.style.opacity = '1';
     }
     document.getElementById('replay-btn').classList.add('show');
     window._introComplete = true;
-  }, 13200);
+  }, 15800);
 }
 
-// Called every frame from room.js animate loop
+// Called from room.js animate loop
 let _dropStarted = false;
 function checkGarmentDrop(garmentMeshes) {
   if (!window._garmentDrop || _dropStarted) return;
@@ -162,6 +195,7 @@ function replayIntro() {
   window._cameraFreeze = false;
   window._garmentDrop = false;
   window._introComplete = false;
+  window._frozenP = null;
   if (typeof roomT0 !== 'undefined') roomT0 = null;
   document.getElementById('replay-btn').classList.remove('show');
   setTimeout(runIntro, 80);
