@@ -236,7 +236,9 @@ function startRoomLoop() {
   function animate(now) {
     requestAnimationFrame(animate);
     if (!roomT0) roomT0 = now;
-    const p = eq(Math.min((now - roomT0) / DUR, 1));
+    const rawP = Math.min((now - roomT0) / DUR, 1);
+    const p = window._cameraFreeze ? (window._frozenP || rawP) : rawP;
+    if (window._cameraFreeze && !window._frozenP) window._frozenP = rawP;
     roomCamera.position.z = SZ + (EZ - SZ) * p;
     roomCamera.position.y = 60 - p * 10;
     roomCamera.lookAt(0, 40 + p * 5, 0);
@@ -251,6 +253,7 @@ function startRoomLoop() {
         new THREE.Vector3(mesh.position.x, tg.ty, tg.bz)
       ]);
     });
+    if (typeof checkGarmentDrop === 'function') checkGarmentDrop(roomGarmentMeshes);
     roomRenderer.render(roomScene, roomCamera);
   }
   requestAnimationFrame(animate);
