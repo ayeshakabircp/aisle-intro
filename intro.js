@@ -15,53 +15,35 @@ function clearAllTimers() {
 
 function showWord(text) {
   const el = document.getElementById('word-display');
-  el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
   el.style.opacity = '0';
-  el.style.transform = 'translateY(6px)';
+  el.style.transform = 'translateY(8px)';
   setTimeout(() => {
     el.textContent = text;
-    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
-  }, 260);
+  }, 320);
 }
 
 function showPhrase(text) {
   const el = document.getElementById('word-display');
-  el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+  el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
   el.style.opacity = '0';
-  el.style.transform = 'translateY(6px)';
+  el.style.transform = 'translateY(8px)';
   setTimeout(() => {
     el.textContent = text;
-    el.style.transition = 'opacity 0.65s ease, transform 0.65s ease';
+    el.style.transition = 'opacity 1.0s ease, transform 1.0s ease';
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
-  }, 260);
+  }, 320);
 }
 
 function hideWord() {
   const el = document.getElementById('word-display');
-  el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
   el.style.opacity = '0';
-  el.style.transform = 'translateY(-8px)';
-}
-
-function fadeIn(el, duration, delay) {
-  if (!el) return;
-  el.style.transition = 'none';
-  el.style.opacity = '0';
-  if (el.style.display === 'none') el.style.display = 'block';
-  setTimeout(() => {
-    el.style.transition = `opacity ${duration}s ease, transform ${duration}s ease`;
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-  }, delay || 50);
-}
-
-function fadeOut(el, duration) {
-  if (!el) return;
-  el.style.transition = `opacity ${duration}s ease`;
-  el.style.opacity = '0';
+  el.style.transform = 'translateY(-6px)';
 }
 
 function runIntro() {
@@ -71,102 +53,105 @@ function runIntro() {
   window._introComplete = false;
   window._frozenP = null;
 
-  // Reset all
+  // Reset all elements
   const wordEl = document.getElementById('word-display');
   wordEl.style.cssText = 'opacity:0;transform:translateY(0);transition:none;';
   wordEl.textContent = '';
 
   const introText = document.getElementById('introducing-text');
   if (introText) {
-    introText.style.cssText = 'opacity:0;transform:translateY(12px);display:none;';
+    introText.style.cssText = 'opacity:0;transform:translateY(10px);display:none;';
   }
 
   const aisleReveal = document.getElementById('aisle-reveal');
-  aisleReveal.style.cssText = 'opacity:0;transform:translateY(0);transition:none;';
+  aisleReveal.style.cssText = 'opacity:0;transform:translateY(8px);transition:none;';
+
+  const aisleSubEl = document.getElementById('aisle-sub');
+  if (aisleSubEl) aisleSubEl.style.cssText = 'opacity:0;transition:none;';
 
   const scrollInd = document.getElementById('scroll-ind');
   if (scrollInd) scrollInd.style.cssText = 'opacity:0;transition:none;';
 
   document.getElementById('replay-btn').classList.remove('show');
 
-  // TIMING — all 0.9s gaps → 1.2s, all 1.2s gaps → 1.5s
-  // S1: Too(0) many(1.2) options(2.4)
-  T(() => showWord('Too'),     0);
-  T(() => showWord('many'),    1200);
-  T(() => showWord('options'), 2400);
+  // ── SEQUENCE ──
+  // S1
+  T(() => showWord('Too'),        1500);
+  T(() => showWord('many'),       3000);
+  T(() => showWord('options'),    4500);
 
-  // gap 1.5s → 3900
-  // S2: Too(3.9) little(5.1) time(6.3)
-  T(() => showWord('Too'),     3900);
-  T(() => showWord('little'),  5100);
-  T(() => showWord('time'),    6300);
+  // S2 — longer breath
+  T(() => showWord('Too'),        6500);
+  T(() => showWord('little'),     8000);
+  T(() => showWord('time'),       9500);
 
-  // gap 1.5s → 7800
-  // S3a: "And never"
-  T(() => showPhrase('And never'), 7800);
-
-  // 1.2s pause → 9000
-  // S3b: "the right size" + camera freeze
+  // S3 — long breath before final phrase
+  T(() => showPhrase('And never'),       11500);
   T(() => {
     showPhrase('the right size');
-    window._cameraFreeze = true;
-  }, 9000);
+    // Camera begins slowing at this point — handled via _cameraSlow flag
+    window._cameraSlow = true;
+  }, 13500);
 
-  // Word fades at 10500ms
-  T(() => hideWord(), 10500);
+  // Camera fully stops 1s after "the right size"
+  T(() => { window._cameraFreeze = true; }, 14500);
 
-  // Garments drop at 11000ms
-  T(() => { window._garmentDrop = true; }, 11000);
+  // Word fades
+  T(() => hideWord(), 15500);
 
-  // "Introducing" at 12500ms
+  // Garments drop
+  T(() => { window._garmentDrop = true; }, 16500);
+
+  // "Introducing" fades in
   T(() => {
     const el = document.getElementById('introducing-text');
     if (!el) return;
     el.style.display = 'block';
-    el.style.transform = 'translateY(12px)';
     el.style.opacity = '0';
+    el.style.transform = 'translateY(10px)';
     el.style.transition = 'none';
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.style.transition = 'opacity 1.4s ease, transform 1.4s ease';
+      el.style.transition = 'opacity 1.6s ease, transform 1.6s ease';
       el.style.opacity = '1';
       el.style.transform = 'translateY(0)';
     }));
-  }, 12500);
+  }, 18500);
 
-  // "Aisle" at 14200ms — Introducing fades out as Aisle comes in
+  // "Aisle" fades in, Introducing fades out
   T(() => {
     const aisle = document.getElementById('aisle-reveal');
-    aisle.style.transition = 'opacity 1.6s ease, transform 1.6s ease';
-    aisle.style.transform = 'translateY(8px)';
-    aisle.style.opacity = '0';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      aisle.style.opacity = '1';
-      aisle.style.transform = 'translateY(0)';
-    }));
+    aisle.style.transition = 'opacity 1.8s ease, transform 1.8s ease';
+    aisle.style.transform = 'translateY(0)';
+    aisle.style.opacity = '1';
 
-    // Fade out Introducing
+    // Fade out Introducing slightly after
     T(() => {
       const intro = document.getElementById('introducing-text');
       if (intro) {
-        intro.style.transition = 'opacity 0.8s ease';
+        intro.style.transition = 'opacity 1.0s ease';
         intro.style.opacity = '0';
       }
-    }, 500);
-  }, 14200);
+    }, 600);
+  }, 21000);
 
-  // Scroll indicator at 15800ms
+  // Subtext + scroll indicator at 22s
   T(() => {
+    const sub = document.getElementById('aisle-sub');
+    if (sub) {
+      sub.style.transition = 'opacity 1.2s ease';
+      sub.style.opacity = '1';
+    }
     const scrollInd = document.getElementById('scroll-ind');
     if (scrollInd) {
-      scrollInd.style.transition = 'opacity 0.8s ease';
+      scrollInd.style.transition = 'opacity 1.2s ease';
       scrollInd.style.opacity = '1';
     }
     document.getElementById('replay-btn').classList.add('show');
     window._introComplete = true;
-  }, 15800);
+  }, 22000);
 }
 
-// Called from room.js animate loop
+// Garment drop — called from room.js animate loop
 let _dropStarted = false;
 function checkGarmentDrop(garmentMeshes) {
   if (!window._garmentDrop || _dropStarted) return;
@@ -176,13 +161,15 @@ function checkGarmentDrop(garmentMeshes) {
 
   function drop(now) {
     const t = (now - startTime) / 1000;
-    const g = 1200;
+    const g = 900; // gentle gravity
     let allGone = true;
     garmentMeshes.forEach((mesh, i) => {
-      const dt = Math.max(0, t - i * 0.018);
+      const dt = Math.max(0, t - i * 0.025); // gentle stagger
       mesh.position.y = startY[i] - 0.5 * g * dt * dt;
-      const fade = Math.max(0, 1 - Math.max(0, (startY[i] - mesh.position.y - 200) / 300));
-      mesh.material.opacity = fade * 0.93;
+      const fadeStart = startY[i] - 150;
+      if (mesh.position.y < fadeStart) {
+        mesh.material.opacity = Math.max(0, 0.93 - (fadeStart - mesh.position.y) / 400);
+      }
       if (mesh.position.y > -2000) allGone = false;
     });
     if (!allGone) requestAnimationFrame(drop);
@@ -193,6 +180,7 @@ function checkGarmentDrop(garmentMeshes) {
 function replayIntro() {
   _dropStarted = false;
   window._cameraFreeze = false;
+  window._cameraSlow = false;
   window._garmentDrop = false;
   window._introComplete = false;
   window._frozenP = null;
