@@ -230,15 +230,30 @@ function buildGrain() {
 }
 
 function startRoomLoop() {
-  const SZ = 700, EZ = 100, DUR = 8000;
+  const SZ = 700, EZ = 100, DUR = 14000;
   function eq(t) { return t < 0.5 ? 8*t*t*t*t : 1 - Math.pow(-2*t+2,4)/2; }
 
   function animate(now) {
     requestAnimationFrame(animate);
     if (!roomT0) roomT0 = now;
     const rawP = Math.min((now - roomT0) / DUR, 1);
-    const p = window._cameraFreeze ? (window._frozenP || rawP) : rawP;
-    if (window._cameraFreeze && !window._frozenP) window._frozenP = rawP;
+    let p;
+    if (window._cameraFreeze) {
+      // Lock camera
+      if (!window._frozenP) window._frozenP = rawP;
+      p = window._frozenP;
+    } else if (window._cameraSlow) {
+      // Ease out strongly — camera decelerates toward stop
+      const slowStart = 13500 / 14000;
+      if (rawP >= slowStart) {
+        const t = (rawP - slowStart) / (1 - slowStart);
+        p = slowStart + (rawP - slowStart) * (1 - t * t);
+      } else {
+        p = rawP;
+      }
+    } else {
+      p = rawP;
+    }
     roomCamera.position.z = SZ + (EZ - SZ) * p;
     roomCamera.position.y = 60 - p * 10;
     roomCamera.lookAt(0, 40 + p * 5, 0);
