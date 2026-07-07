@@ -1,0 +1,132 @@
+/* ═══════════════════════════════════════════════════════
+   AISLE — DESIGN TOKENS
+   Single source of truth. Edit here, update prototype.
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── COLOUR PALETTE ── */
+  --color-bg:           #F7F4F0;   /* primary background */
+  --color-bg-warm:      #FAF0E0;   /* nav bar, outfit panel, input areas */
+  --color-bg-card:      #EDE8E2;   /* product cards, category circles bg */
+  --color-bg-elevated:  #E4DFD8;   /* avatar zone, image zone */
+
+  --color-champagne:    #EACEAA;   /* hover, selected, active states */
+  --color-antique-gold: #B5431E;   /* hover accent stroke */
+
+  --color-espresso:     #3E2010;   /* section labels (TRENDING, BROWSE BY…) */
+  --color-rich-wine:    #3A1014;   /* H1 headings */
+  --color-wood-brown:   #311B0E;   /* primary CTAs, buttons */
+  --color-antique-gold-text: #B5431E; /* links, accents */
+
+  --color-text-primary:   #1E1B18;
+  --color-text-secondary: #5E5850;
+  --color-text-muted:     #A09890;
+  --color-text-placeholder: #C0B8B0;
+
+  --color-border:       #D4C4A8;   /* all strokes — warm sand, replaces grey */
+  --color-border-light: #E8E0D4;   /* subtle dividers */
+  --color-border-hover: #B5431E;   /* hover stroke */
+
+  --color-green:        #4A7C59;
+  --color-green-light:  #EEF6F1;
+
+
+  /* ── TYPOGRAPHY ── */
+  --font-serif:   'Cormorant Garamond', Georgia, serif;
+  --font-sans:    'DM Sans', sans-serif;
+
+  /* Scale */
+  --text-h1:      56px;   /* welcome H1 */
+  --text-h2:      28px;   /* results header, product name detail */
+  --text-h3:      20px;   /* cart title, payment title */
+  --text-body-lg: 14px;   /* input placeholder */
+  --text-body:    12px;   /* product names, CTAs */
+  --text-sm:      11px;   /* metadata, labels */
+  --text-xs:      10px;   /* tags, uppercase labels */
+  --text-xxs:     9px;    /* chips, rack items */
+
+  /* Panel title */
+  --panel-title-size: 22px;
+  --panel-title-font: var(--font-serif);
+  --panel-title-weight: 400;
+  --panel-title-color: var(--color-text-primary);
+  --panel-title-spacing: 0;
+
+
+  /* ── SPACING ── */
+  --space-screen-x:     32px;   /* left/right padding on main screens */
+  --space-screen-y:     32px;   /* top padding on main screens */
+  --space-nav-x:        28px;   /* nav bar horizontal padding */
+  --space-section-gap:  32px;   /* gap between sections (Trending → Browse) */
+  --space-card-gap:     16px;   /* gap between product cards */
+  --space-panel-x:      14px;   /* outfit panel padding */
+
+
+  /* ── BORDER RADIUS ── */
+  --radius-none:   0px;
+  --radius-sm:     6px;
+  --radius-md:     10px;
+  --radius-lg:     14px;
+  --radius-full:   999px;
+
+  /* Component radii */
+  --radius-trend-card:    0px;    /* rectangular */
+  --radius-product-card:  10px;
+  --radius-cat-circle:    50%;
+  --radius-chip:          999px;
+  --radius-btn:           6px;
+  --radius-input:         999px;
+  --radius-panel:         0px;
+  --radius-overlay:       14px;
+
+
+  /* ── SHADOWS ── */
+  --shadow-card:    0 2px 12px rgba(49,27,14,.07);
+  --shadow-cta:     0 2px 16px rgba(49,27,14,.28);
+  --shadow-overlay: 0 8px 40px rgba(0,0,0,.16);
+
+
+  /* ── TRANSITIONS ── */
+  --ease-standard: cubic-bezier(.4,0,.2,1);
+  --dur-fast:   150ms;
+  --dur-normal: 300ms;
+  --dur-slow:   500ms;
+
+
+  /* ── COMPONENT-SPECIFIC ── */
+
+  /* Trend cards */
+  --trend-card-title-size:   14px;
+  --trend-card-sub-size:     11px;
+  --trend-card-info-pad:     10px 12px;
+
+  /* Category circles */
+  --cat-circle-size:     100%;    /* fills grid cell */
+  --cat-circle-border:   none;    /* no border in inactive */
+  --cat-circle-border-hover: 1px solid var(--color-border-hover);
+  --cat-label-size:      11px;
+  --cat-gap:             8px;
+
+  /* Nav bar */
+  --nav-height:          72px;
+  --nav-bg:              var(--color-bg-warm);
+  --nav-border:          1px solid var(--color-border);
+
+  /* Outfit panel */
+  --panel-width:         280px;
+  --panel-bg:            var(--color-bg-warm);
+  --panel-border:        1px solid var(--color-border);
+
+  /* CTAs */
+  --cta-bg:              var(--color-wood-brown);
+  --cta-color:           #F7F4F0;
+  --cta-hover-opacity:   0.88;
+
+  /* Section labels */
+  --section-label-color: var(--color-espresso);
+  --section-label-size:  10px;
+  --section-label-weight: 600;
+  --section-label-spacing: .1em;
+
+}

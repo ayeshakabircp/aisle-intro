@@ -1,0 +1,145 @@
+/* ══════════════════════════════════════════════════════════
+   AVATAR LAYER SYSTEM — CSS for dynamic try-on compositing
+   ══════════════════════════════════════════════════════════ */
+
+.avatar-composite {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  overflow: hidden;
+  background: #E8E4DE;
+  border-radius: 10px;
+}
+
+/* Base layer — always visible */
+.avatar-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  z-index: 1;
+}
+
+/* Layer ordering */
+.layer-base {
+  z-index: 1;
+}
+
+.layer-dress {
+  z-index: 2;
+}
+
+.layer-face-accessories {
+  z-index: 3;
+}
+
+.layer-bag {
+  z-index: 4;
+}
+
+.layer-shoes {
+  z-index: 5;
+}
+
+/* Hide/show via JS */
+.layer-hidden {
+  display: none !important;
+}
+
+/* Smooth transitions when toggling */
+.avatar-layer {
+  transition: opacity 0.3s ease;
+}
+
+.avatar-layer.fading-out {
+  opacity: 0;
+}
+
+/* ──────────────────────────────────────────────────────── */
+/* JAVASCRIPT COMPANION */
+/* ──────────────────────────────────────────────────────── */
+
+/*
+const AVATAR_LAYERS = {
+  base: 'base-avatar.png',
+  dress: 'dress-maroon.png',
+  faceAccessories: 'layer-face-accessories.png',
+  bag: 'layer-bag.png',
+  shoes: 'layer-shoes.png'
+};
+
+const wornItems = {
+  dress: true,
+  faceAccessories: true,
+  bag: true,
+  shoes: true
+};
+
+function renderAvatar(wornItems) {
+  const container = document.querySelector('.avatar-composite');
+  container.innerHTML = '';
+
+  // Always render base
+  const baseImg = document.createElement('img');
+  baseImg.src = AVATAR_LAYERS.base;
+  baseImg.className = 'avatar-layer layer-base';
+  container.appendChild(baseImg);
+
+  // Render dress (replaces base body)
+  if (wornItems.dress) {
+    const dressImg = document.createElement('img');
+    dressImg.src = AVATAR_LAYERS.dress;
+    dressImg.className = 'avatar-layer layer-dress';
+    container.appendChild(dressImg);
+  }
+
+  // Render face + accessories (replaces face from dress)
+  if (wornItems.faceAccessories) {
+    const faceImg = document.createElement('img');
+    faceImg.src = AVATAR_LAYERS.faceAccessories;
+    faceImg.className = 'avatar-layer layer-face-accessories';
+    container.appendChild(faceImg);
+  }
+
+  // Render bag
+  if (wornItems.bag) {
+    const bagImg = document.createElement('img');
+    bagImg.src = AVATAR_LAYERS.bag;
+    bagImg.className = 'avatar-layer layer-bag';
+    container.appendChild(bagImg);
+  }
+
+  // Render shoes
+  if (wornItems.shoes) {
+    const shoesImg = document.createElement('img');
+    shoesImg.src = AVATAR_LAYERS.shoes;
+    shoesImg.className = 'avatar-layer layer-shoes';
+    container.appendChild(shoesImg);
+  }
+}
+
+// Toggle handlers
+document.getElementById('toggle-dress').addEventListener('change', (e) => {
+  wornItems.dress = e.target.checked;
+  renderAvatar(wornItems);
+});
+
+document.getElementById('toggle-accessories').addEventListener('change', (e) => {
+  wornItems.faceAccessories = e.target.checked;
+  renderAvatar(wornItems);
+});
+
+document.getElementById('toggle-bag').addEventListener('change', (e) => {
+  wornItems.bag = e.target.checked;
+  renderAvatar(wornItems);
+});
+
+document.getElementById('toggle-shoes').addEventListener('change', (e) => {
+  wornItems.shoes = e.target.checked;
+  renderAvatar(wornItems);
+});
+*/
