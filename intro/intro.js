@@ -152,18 +152,18 @@ function runIntro() {
   T(() => showWord('And never'),      TL.andNever);
   T(() => showWord('the right size'), TL.rightSize);
 
-  // Garments fade in shortly after the first word — but only once textures
-  // are actually loaded, so they never appear half-rendered or pop in late.
+  // Garments fade in from the very start of the video — but only once
+  // textures are actually loaded, so they never appear half-rendered.
   T(() => {
     function tryFadeIn() {
       if (window._garmentsReady) {
-        if (typeof g3FadeTo === 'function') g3FadeTo(1, 0.8);
+        if (typeof g3FadeTo === 'function') g3FadeTo(1, 1.2);
       } else {
         requestAnimationFrame(tryFadeIn);
       }
     }
     tryFadeIn();
-  }, TL.too1 + 400);
+  }, 0);
 
   // ── Word fades with the light-build (unchanged) ──
   T(() => {
