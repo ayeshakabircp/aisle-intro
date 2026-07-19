@@ -1,30 +1,32 @@
-// grain.js — animated film grain overlay
-function initGrain() {
-  const grain = document.createElement('canvas');
-  grain.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.04;z-index:100;';
-  document.body.appendChild(grain);
+// ── GRAIN OVERLAY ──
+(function () {
+  const canvas = document.getElementById('grain-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   function resize() {
-    grain.width = window.innerWidth;
-    grain.height = window.innerHeight;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
   }
   resize();
   window.addEventListener('resize', resize);
 
-  const ctx = grain.getContext('2d');
-  function draw() {
-    const W = grain.width, H = grain.height;
-    const id = ctx.createImageData(W, H);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const v = Math.random() * 255;
-      d[i]   = Math.min(255, v + 30); // warm tint
-      d[i+1] = Math.min(255, v + 12);
-      d[i+2] = Math.round(v * 0.6);
-      d[i+3] = 255;
+  function drawGrain() {
+    const w = canvas.width, h = canvas.height;
+    const imgData = ctx.createImageData(w, h);
+    const buf = imgData.data;
+    for (let i = 0; i < buf.length; i += 4) {
+      const v = 200 + Math.random() * 55; // warm-biased noise
+      buf[i] = v;
+      buf[i + 1] = v * 0.94;
+      buf[i + 2] = v * 0.82;
+      buf[i + 3] = Math.random() * 40;
     }
-    ctx.putImageData(id, 0, 0);
+    ctx.putImageData(imgData, 0, 0);
   }
-  draw();
-  setInterval(draw, 100);
-}
+
+  setInterval(drawGrain, 150);
+  drawGrain();
+})();
