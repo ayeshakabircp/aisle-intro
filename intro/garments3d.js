@@ -1,32 +1,40 @@
 // ── GARMENT LAYER — real Three.js, transparent overlay on top of the video ──
-// No room geometry — only garment meshes + thread lines, alpha-cleared canvas.
-// Textures are black-background PNGs, keyed to transparent via an offscreen
-// canvas (CanvasTexture), same technique as the working 2D version — Three.js
-// alphaTest alone does nothing without an actual alpha channel.
-// Camera stays IN FRONT of every garment at all times so they remain upright,
-// in-frame, and simply fade into the blinding white — never fly past/overhead.
+// Garments scatter widely across x/z, repeat endlessly along z (generative,
+// not hand-placed) so the camera passes an ongoing field of dresses rather
+// than a fixed cluster. Y is centered on the camera's own look-at height so
+// nothing clusters near the ceiling. They hold steady and simply fade into
+// the blinding white at the end — no pull-up, no early exit.
 
 let g3Scene, g3Camera, g3Renderer;
 let g3Meshes = [], g3Threads = [];
 let g3T0 = null;
 let g3Opacity = 0;
 
-// Depths chosen so the FARTHEST camera position (G3_EZ) still sits well in
-// front of every garment's z (camera z > garment z for all entries, always).
-const G3_DATA = [
-  { x: -150, z: -420,  threadLen: 320, sway: 0.0, img: 1 },
-  { x:  120, z: -520,  threadLen: 90,  sway: 1.1, img: 2 },
-  { x: -270, z: -620,  threadLen: 220, sway: 0.5, img: 3 },
-  { x:  40,  z: -740,  threadLen: 340, sway: 2.1, img: 4 },
-  { x:  240, z: -680,  threadLen: 75,  sway: 0.8, img: 5 },
-  { x: -100, z: -860,  threadLen: 180, sway: 1.6, img: 6 },
-  { x:  190, z: -960,  threadLen: 300, sway: 2.4, img: 7 },
-  { x: -230, z: -1060, threadLen: 110, sway: 0.3, img: 3 },
-  { x:  60,  z: -1180, threadLen: 280, sway: 1.9, img: 1 },
-  { x: -60,  z: -1300, threadLen: 95,  sway: 1.2, img: 5 },
-];
+// ── Generative field: spread across x, z (deep, endless-feeling), y centered ──
+const CAMERA_LOOKAT_Y = 45;
+function buildG3Data() {
+  const data = [];
+  const COUNT = 26;
+  const Z_START = -260;
+  const Z_END = -3400;
+  const Z_STEP = (Z_END - Z_START) / COUNT;
 
-// Keys a black-background PNG to transparent, returns a THREE.CanvasTexture.
+  for (let i = 0; i < COUNT; i++) {
+    // Even spacing along z with jitter, so it reads as a continuous field
+    // rather than obviously repeating tiles.
+    const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
+    const x = (Math.random() - 0.5) * 900;
+    // Y centered on the camera's look-at height, modest spread above/below
+    const baseY = CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 160;
+    data.push({
+      x, z, baseY,
+      sway: Math.random() * Math.PI * 2,
+      img: (i % 7) + 1,
+    });
+  }
+  return data;
+}
+
 function keyToTransparentTexture(img, cb) {
   try {
     const off = document.createElement('canvas');
@@ -59,20 +67,20 @@ function g3Init(onReady) {
   g3Renderer.setSize(window.innerWidth, window.innerHeight);
 
   g3Scene = new THREE.Scene();
-  g3Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 4000);
+  g3Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 6000);
   g3Camera.position.set(0, 60, 700);
-  g3Camera.lookAt(0, 40, 0);
+  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 0);
 
   const ambient = new THREE.AmbientLight(0xffe8d0, 0.95);
   g3Scene.add(ambient);
-  const key = new THREE.PointLight(0xffd9a8, 0.5, 1600);
+  const key = new THREE.PointLight(0xffd9a8, 0.5, 2000);
   key.position.set(0, 200, 300);
   g3Scene.add(key);
 
-  const ceilY = 350;
+  const G3_DATA = buildG3Data();
   const lineMatBase = { color: 0xD4A870, transparent: true, opacity: 0 };
 
-  // ── Step 1: create ALL meshes first (with a blank/white-off material) ──
+  // ── Step 1: create ALL meshes first ──
   G3_DATA.forEach(g => {
     const mat = new THREE.MeshBasicMaterial({
       transparent: true,
@@ -83,21 +91,22 @@ function g3Init(onReady) {
     });
     const w = 95, h = 175;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    const topY = ceilY - g.threadLen;
-    const baseY = topY - h / 2;
-    mesh.position.set(g.x, baseY, g.z);
-    mesh.userData = { baseX: g.x, baseZ: g.z, sway: g.sway, topY };
-    mesh.visible = false; // hidden until its texture is actually applied
+    mesh.position.set(g.x, g.baseY, g.z);
+    mesh.userData = { baseX: g.x, baseZ: g.z, baseY: g.baseY, sway: g.sway };
+    mesh.visible = false;
     g3Scene.add(mesh);
     g3Meshes.push(mesh);
 
+    // Thread runs from a fixed height above each garment's own baseY
+    const topY = g.baseY + h / 2;
+    const threadTopY = topY + 220 + Math.random() * 80;
     const geo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(g.x, ceilY, g.z),
+      new THREE.Vector3(g.x, threadTopY, g.z),
       new THREE.Vector3(g.x, topY, g.z),
     ]);
     const line = new THREE.Line(geo, new THREE.LineBasicMaterial(lineMatBase));
     g3Scene.add(line);
-    g3Threads.push({ line, geo, ceilY, topY, baseZ: g.z });
+    g3Threads.push({ line, geo, threadTopY, topY, baseZ: g.z });
   });
 
   // ── Step 2: load + key each unique image, apply to every mesh using it ──
@@ -138,22 +147,22 @@ function g3Init(onReady) {
   g3Tick();
 }
 
-// Camera stays well in FRONT of the nearest garment (z:-420) at all times —
-// G3_EZ is chosen so it never crosses past any garment, so nothing ever
-// swings overhead or exits behind the camera. Garments simply grow closer
-// and then dissolve into the white, staying upright and in-frame throughout.
-const G3_SZ = 700, G3_EZ = -180;
+// Camera travels deep into the field (well past the near garments, through
+// the middle of the spread) so nearer dresses grow large and are passed,
+// while further ones are still small — a genuine "endless" sensation —
+// right up until they all fade into white together at the end.
+const G3_SZ = 700, G3_EZ = -1700;
 
 function g3SetCameraProgress(p) {
   const z = G3_SZ + (G3_EZ - G3_SZ) * p;
   g3Camera.position.z = z;
   g3Camera.position.y = 60 - p * 10;
-  g3Camera.lookAt(0, 45, 0);
+  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 0);
 }
 
 function g3SetOpacity(v) {
   g3Opacity = v;
-  g3Meshes.forEach(m => { m.material.opacity = 0.92 * v; });
+  g3Meshes.forEach(m => { m.material.opacity = 0.90 * v; }); // 90% per spec
   g3Threads.forEach(t => { t.line.material.opacity = 0.45 * v; });
 }
 
@@ -183,7 +192,7 @@ function g3Tick(now) {
     mesh.rotation.z = sway * 0.0016;
     const th = g3Threads[i];
     th.geo.setFromPoints([
-      new THREE.Vector3(mesh.position.x, th.ceilY, th.baseZ),
+      new THREE.Vector3(mesh.position.x, th.threadTopY, th.baseZ),
       new THREE.Vector3(mesh.position.x, th.topY, th.baseZ),
     ]);
   });
