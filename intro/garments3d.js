@@ -25,7 +25,7 @@ function buildG3Data() {
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
     const x = (Math.random() - 0.5) * 900;
     // Y centered on the camera's look-at height, modest spread above/below
-    const baseY = CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 160;
+    const baseY = CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100;
     data.push({
       x, z, baseY,
       sway: Math.random() * Math.PI * 2,
@@ -69,7 +69,7 @@ function g3Init(onReady) {
   g3Scene = new THREE.Scene();
   g3Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 6000);
   g3Camera.position.set(0, 60, 700);
-  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 0);
+  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 300);
 
   const ambient = new THREE.AmbientLight(0xffe8d0, 0.95);
   g3Scene.add(ambient);
@@ -157,7 +157,12 @@ function g3SetCameraProgress(p) {
   const z = G3_SZ + (G3_EZ - G3_SZ) * p;
   g3Camera.position.z = z;
   g3Camera.position.y = 60 - p * 10;
-  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 0);
+  // Look target tracks ahead of the camera's own z, always further into
+  // the direction of travel — a fixed world-space lookAt (e.g. z:0) flips
+  // the camera's facing direction the moment its z crosses that point,
+  // which was the actual bug: garments appeared to reverse motion once
+  // the camera passed z=0.
+  g3Camera.lookAt(0, CAMERA_LOOKAT_Y, z - 400);
 }
 
 function g3SetOpacity(v) {
