@@ -12,19 +12,31 @@ let g3Opacity = 0;
 
 // ── Generative field: spread across x, z (deep, endless-feeling), y centered ──
 const CAMERA_LOOKAT_Y = 45;
+
+// x sampled to avoid crowding the center (where text sits) — most garments
+// land well to either side, with only an occasional one allowed near center.
+function sampleX() {
+  if (Math.random() < 0.15) {
+    return (Math.random() - 0.5) * 300; // rare center piece
+  }
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const minOffset = 220, maxOffset = 650;
+  return side * (minOffset + Math.random() * (maxOffset - minOffset));
+}
+
 function buildG3Data() {
   const data = [];
   const COUNT = 26;
-  const Z_START = -260;
+  // Z_START brought much closer to the camera's own start (700) so some
+  // garments are already prominent/near at t=0 instead of everything
+  // starting uniformly distant — genuinely even distribution from the outset.
+  const Z_START = 50;
   const Z_END = -3400;
   const Z_STEP = (Z_END - Z_START) / COUNT;
 
   for (let i = 0; i < COUNT; i++) {
-    // Even spacing along z with jitter, so it reads as a continuous field
-    // rather than obviously repeating tiles.
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
-    const x = (Math.random() - 0.5) * 900;
-    // Y centered on the camera's look-at height, modest spread above/below
+    const x = sampleX();
     const baseY = CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100;
     data.push({
       x, z, baseY,
@@ -32,6 +44,13 @@ function buildG3Data() {
       img: (i % 7) + 1,
     });
   }
+
+  // zNorm: 0 = nearest garment, 1 = farthest — drives the staggered fade-out
+  // so the farthest garments dissolve first, spreading toward the nearest.
+  const zs = data.map(g => g.z);
+  const minZ = Math.min(...zs), maxZ = Math.max(...zs); // minZ = farthest (most negative)
+  data.forEach(g => { g.zNorm = (maxZ - g.z) / (maxZ - minZ); });
+
   return data;
 }
 
@@ -92,7 +111,7 @@ function g3Init(onReady) {
     const w = 95, h = 175;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     mesh.position.set(g.x, g.baseY, g.z);
-    mesh.userData = { baseX: g.x, baseZ: g.z, baseY: g.baseY, sway: g.sway };
+    mesh.userData = { baseX: g.x, baseZ: g.z, baseY: g.baseY, sway: g.sway, zNorm: g.zNorm };
     mesh.visible = false;
     g3Scene.add(mesh);
     g3Meshes.push(mesh);
@@ -181,6 +200,33 @@ function g3FadeTo(target, durationSec) {
     const p = Math.min((now - t0) / durMs, 1);
     g3SetOpacity(start + (target - start) * p);
     if (p < 1) g3FadeRAF = requestAnimationFrame(step);
+  }
+  g3FadeRAF = requestAnimationFrame(step);
+}
+
+// Staggered fade-OUT: farthest garments (zNorm near 1) begin dissolving
+// first, and the effect spreads progressively toward the nearest (zNorm
+// near 0), all finishing together by the end of the given duration.
+function g3FadeOutStaggered(durationSec) {
+  if (g3FadeRAF) cancelAnimationFrame(g3FadeRAF);
+  const STAGGER = 0.55; // how much of the duration the wave itself spans
+  const t0 = performance.now();
+  const durMs = Math.max(durationSec, 0.01) * 1000;
+
+  function step(now) {
+    const globalP = Math.min((now - t0) / durMs, 1);
+    g3Meshes.forEach((mesh, i) => {
+      const zNorm = mesh.userData.zNorm || 0;
+      const startFrac = (1 - zNorm) * STAGGER; // farthest (zNorm=1) starts at 0, nearest starts latest
+      const localP = Math.max(0, Math.min((globalP - startFrac) / (1 - STAGGER), 1));
+      mesh.material.opacity = 0.90 * (1 - localP);
+      g3Threads[i].line.material.opacity = 0.45 * (1 - localP);
+    });
+    if (globalP < 1) {
+      g3FadeRAF = requestAnimationFrame(step);
+    } else {
+      g3Opacity = 0;
+    }
   }
   g3FadeRAF = requestAnimationFrame(step);
 }
