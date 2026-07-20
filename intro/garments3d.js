@@ -26,13 +26,15 @@ function sampleX(dist, side) {
 // No more extreme low-drop outliers.
 function sampleY(dist) {
   const halfH = dist * 0.4663; // tan(halfFOV) at ~25°
+  const CAP = 220; // hard ceiling on vertical offset, regardless of distance —
+                    // prevents far garments getting flung to extreme Y positions
   const t = Math.random();
   if (t < 0.5) {
     const frac = Math.random() * 0.32; // up to ~32% of half-height above center
-    return CAMERA_LOOKAT_Y + frac * halfH;
+    return CAMERA_LOOKAT_Y + Math.min(frac * halfH, CAP);
   } else {
     const frac = Math.random() * 0.40; // up to ~40% below center
-    return CAMERA_LOOKAT_Y - frac * halfH;
+    return CAMERA_LOOKAT_Y - Math.min(frac * halfH, CAP);
   }
 }
 
