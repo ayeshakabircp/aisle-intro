@@ -1,49 +1,46 @@
 // ── GARMENT LAYER — real Three.js, transparent overlay on top of the video ──
-// Garments scatter widely across x/z, repeat endlessly along z (generative,
-// not hand-placed) so the camera passes an ongoing field of dresses rather
-// than a fixed cluster. Y is centered on the camera's own look-at height so
-// nothing clusters near the ceiling. They hold steady and simply fade into
-// the blinding white at the end — no pull-up, no early exit.
+// Black-background keying is done in a GPU fragment shader now, not via
+// canvas getImageData() — that CPU-side approach could throw/fail under
+// certain browser security contexts (e.g. file:// origin), silently
+// rendering garments as solid black rectangles. A shader-based discard has
+// no such restriction and works identically regardless of how the page is
+// served.
 
 let g3Scene, g3Camera, g3Renderer;
 let g3Meshes = [], g3Threads = [];
 let g3T0 = null;
 let g3Opacity = 0;
 
-// ── Generative field: spread across x, z (deep, endless-feeling), y centered ──
 const CAMERA_LOOKAT_Y = 45;
 
-// x sampled to avoid crowding the center (where text sits) — most garments
-// land well to either side, with only an occasional one allowed near center.
-function sampleX() {
-  if (Math.random() < 0.15) {
-    return (Math.random() - 0.5) * 300; // rare center piece
+// x offset scales with depth AND is pushed much harder toward the edges —
+// perspective compresses a fixed world offset toward center as distance
+// increases, so this keeps garments consistently clear of the center
+// regardless of how far back they sit.
+function sampleX(z) {
+  const dist = Math.abs(z) + 300;
+  if (Math.random() < 0.08) {
+    return (Math.random() - 0.5) * dist * 0.10; // rare, still pushed a bit off dead-center
   }
   const side = Math.random() < 0.5 ? -1 : 1;
-  const minOffset = 220, maxOffset = 650;
-  return side * (minOffset + Math.random() * (maxOffset - minOffset));
+  const minFrac = 0.28, maxFrac = 0.52;
+  return side * dist * (minFrac + Math.random() * (maxFrac - minFrac));
 }
 
 function buildG3Data() {
   const data = [];
   const COUNT = 26;
-  // Z_START brought much closer to the camera's own start (700) so some
-  // garments are already prominent/near at t=0 instead of everything
-  // starting uniformly distant — genuinely even distribution from the outset.
   const Z_START = 50;
   const Z_END = -3400;
   const Z_STEP = (Z_END - Z_START) / COUNT;
 
   for (let i = 0; i < COUNT; i++) {
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
-    const x = sampleX();
-    // Most garments keep today's comfortable range (unchanged ceiling), but
-    // roughly a quarter drop dramatically lower for real stagger/drama —
-    // never higher than the existing max.
+    const x = sampleX(z);
     const isDramatic = Math.random() < 0.25;
     const baseY = isDramatic
-      ? CAMERA_LOOKAT_Y - (60 + Math.random() * 150)  // long drop, well below the rest
-      : CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100; // unchanged normal range
+      ? CAMERA_LOOKAT_Y - (60 + Math.random() * 150)
+      : CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100;
     data.push({
       x, z, baseY,
       sway: Math.random() * Math.PI * 2,
@@ -51,38 +48,32 @@ function buildG3Data() {
     });
   }
 
-  // zNorm: 0 = nearest garment, 1 = farthest — drives the staggered fade-out
-  // so the farthest garments dissolve first, spreading toward the nearest.
   const zs = data.map(g => g.z);
-  const minZ = Math.min(...zs), maxZ = Math.max(...zs); // minZ = farthest (most negative)
+  const minZ = Math.min(...zs), maxZ = Math.max(...zs);
   data.forEach(g => { g.zNorm = (maxZ - g.z) / (maxZ - minZ); });
 
   return data;
 }
 
-function keyToTransparentTexture(img, cb) {
-  try {
-    const off = document.createElement('canvas');
-    off.width = img.naturalWidth;
-    off.height = img.naturalHeight;
-    const ctx = off.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    const data = ctx.getImageData(0, 0, off.width, off.height);
-    const buf = data.data;
-    for (let i = 0; i < buf.length; i += 4) {
-      if (buf[i] < 18 && buf[i + 1] < 18 && buf[i + 2] < 18) buf[i + 3] = 0;
-    }
-    ctx.putImageData(data, 0, 0);
-    const tex = new THREE.CanvasTexture(off);
-    tex.needsUpdate = true;
-    cb(tex);
-  } catch (e) {
-    console.warn('Garment key-out failed, using raw texture:', e);
-    const tex = new THREE.Texture(img);
-    tex.needsUpdate = true;
-    cb(tex);
-  }
-}
+// ── Shader-based black-key: samples the texture, discards near-black pixels
+//     entirely on GPU. No canvas pixel reads, no security/CORS exposure. ──
+const KEY_VERTEX = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+const KEY_FRAGMENT = `
+uniform sampler2D map;
+uniform float uOpacity;
+varying vec2 vUv;
+void main() {
+  vec4 texel = texture2D(map, vUv);
+  float lum = max(texel.r, max(texel.g, texel.b));
+  if (lum < 0.075) discard; // keys out near-black background
+  gl_FragColor = vec4(texel.rgb, uOpacity);
+}`;
 
 function g3Init(onReady) {
   const canvas = document.getElementById('garment-3d-layer');
@@ -92,27 +83,22 @@ function g3Init(onReady) {
   g3Renderer.setSize(window.innerWidth, window.innerHeight);
 
   g3Scene = new THREE.Scene();
-  g3Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 6000);
+  g3Camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 4000);
   g3Camera.position.set(0, 60, 700);
   g3Camera.lookAt(0, CAMERA_LOOKAT_Y, 300);
-
-  const ambient = new THREE.AmbientLight(0xffe8d0, 0.95);
-  g3Scene.add(ambient);
-  const key = new THREE.PointLight(0xffd9a8, 0.5, 2000);
-  key.position.set(0, 200, 300);
-  g3Scene.add(key);
 
   const G3_DATA = buildG3Data();
   const lineMatBase = { color: 0xD4A870, transparent: true, opacity: 0 };
 
-  // ── Step 1: create ALL meshes first ──
+  // ── Step 1: create ALL meshes first, with the shader material ──
   G3_DATA.forEach(g => {
-    const mat = new THREE.MeshBasicMaterial({
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { map: { value: null }, uOpacity: { value: 0 } },
+      vertexShader: KEY_VERTEX,
+      fragmentShader: KEY_FRAGMENT,
       transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      alphaTest: 0.01,
       depthWrite: false,
+      side: THREE.DoubleSide,
     });
     const w = 95, h = 175;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
@@ -122,7 +108,6 @@ function g3Init(onReady) {
     g3Scene.add(mesh);
     g3Meshes.push(mesh);
 
-    // Thread runs from a fixed height above each garment's own baseY
     const topY = g.baseY + h / 2;
     const threadTopY = topY + 220 + Math.random() * 80;
     const geo = new THREE.BufferGeometry().setFromPoints([
@@ -134,10 +119,11 @@ function g3Init(onReady) {
     g3Threads.push({ line, geo, threadTopY, topY, baseZ: g.z });
   });
 
-  // ── Step 2: load + key each unique image, apply to every mesh using it ──
+  // ── Step 2: load each unique texture directly (no canvas manipulation) ──
   const uniqueImgs = [...new Set(G3_DATA.map(g => g.img))];
   let loadedCount = 0;
   const texCache = {};
+  const texLoader = new THREE.TextureLoader();
 
   function onOneReady() {
     loadedCount++;
@@ -145,7 +131,7 @@ function g3Init(onReady) {
       G3_DATA.forEach((g, i) => {
         const tex = texCache[g.img];
         if (tex) {
-          g3Meshes[i].material.map = tex;
+          g3Meshes[i].material.uniforms.map.value = tex;
           g3Meshes[i].material.needsUpdate = true;
           g3Meshes[i].visible = true;
         }
@@ -155,12 +141,12 @@ function g3Init(onReady) {
   }
 
   uniqueImgs.forEach(id => {
-    const imgEl = new Image();
-    imgEl.onload = () => {
-      keyToTransparentTexture(imgEl, tex => { texCache[id] = tex; onOneReady(); });
-    };
-    imgEl.onerror = () => { console.warn('Failed to load dress' + id + '.png'); onOneReady(); };
-    imgEl.src = `dress${id}.png`;
+    texLoader.load(
+      `dress${id}.png`,
+      tex => { texCache[id] = tex; onOneReady(); },
+      undefined,
+      () => { console.warn('Failed to load dress' + id + '.png'); onOneReady(); }
+    );
   });
 
   window.addEventListener('resize', () => {
@@ -172,27 +158,18 @@ function g3Init(onReady) {
   g3Tick();
 }
 
-// Camera travels deep into the field (well past the near garments, through
-// the middle of the spread) so nearer dresses grow large and are passed,
-// while further ones are still small — a genuine "endless" sensation —
-// right up until they all fade into white together at the end.
 const G3_SZ = 700, G3_EZ = -1700;
 
 function g3SetCameraProgress(p) {
   const z = G3_SZ + (G3_EZ - G3_SZ) * p;
   g3Camera.position.z = z;
   g3Camera.position.y = 60 - p * 10;
-  // Look target tracks ahead of the camera's own z, always further into
-  // the direction of travel — a fixed world-space lookAt (e.g. z:0) flips
-  // the camera's facing direction the moment its z crosses that point,
-  // which was the actual bug: garments appeared to reverse motion once
-  // the camera passed z=0.
   g3Camera.lookAt(0, CAMERA_LOOKAT_Y, z - 400);
 }
 
 function g3SetOpacity(v) {
   g3Opacity = v;
-  g3Meshes.forEach(m => { m.material.opacity = 0.90 * v; }); // 90% per spec
+  g3Meshes.forEach(m => { m.material.uniforms.uOpacity.value = 0.90 * v; });
   g3Threads.forEach(t => { t.line.material.opacity = 0.45 * v; });
 }
 
@@ -210,12 +187,9 @@ function g3FadeTo(target, durationSec) {
   g3FadeRAF = requestAnimationFrame(step);
 }
 
-// Staggered fade-OUT: farthest garments (zNorm near 1) begin dissolving
-// first, and the effect spreads progressively toward the nearest (zNorm
-// near 0), all finishing together by the end of the given duration.
 function g3FadeOutStaggered(durationSec) {
   if (g3FadeRAF) cancelAnimationFrame(g3FadeRAF);
-  const STAGGER = 0.55; // how much of the duration the wave itself spans
+  const STAGGER = 0.55;
   const t0 = performance.now();
   const durMs = Math.max(durationSec, 0.01) * 1000;
 
@@ -223,9 +197,9 @@ function g3FadeOutStaggered(durationSec) {
     const globalP = Math.min((now - t0) / durMs, 1);
     g3Meshes.forEach((mesh, i) => {
       const zNorm = mesh.userData.zNorm || 0;
-      const startFrac = (1 - zNorm) * STAGGER; // farthest (zNorm=1) starts at 0, nearest starts latest
+      const startFrac = (1 - zNorm) * STAGGER;
       const localP = Math.max(0, Math.min((globalP - startFrac) / (1 - STAGGER), 1));
-      mesh.material.opacity = 0.90 * (1 - localP);
+      mesh.material.uniforms.uOpacity.value = 0.90 * (1 - localP);
       g3Threads[i].line.material.opacity = 0.45 * (1 - localP);
     });
     if (globalP < 1) {

@@ -8,7 +8,7 @@ window.addEventListener('load', () => {
   if (typeof g3Init === 'function') {
     g3Init(() => { window._garmentsReady = true; });
   }
-  if (typeof kfInit === 'function') kfInit();
+  if (typeof cgInit === 'function') cgInit();
   if (typeof hoverlaysInit === 'function') hoverlaysInit();
 
   // Prototype-only deep link: ?state=kiosk jumps straight to the settled

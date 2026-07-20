@@ -95,7 +95,7 @@ function resetAll() {
   disarmParticleListener();
 
   if (typeof g3Reset === 'function') g3Reset();
-  if (typeof kfSetVisible === 'function') kfSetVisible(false);
+  if (typeof cgReset === 'function') cgReset();
   if (typeof hoverlaysSetEnabled === 'function') hoverlaysSetEnabled(false);
 
   const vc = $('video-corridor');
@@ -127,6 +127,7 @@ function runIntro() {
 
   const vc = $('video-corridor');
   vc.play().catch(() => {});
+  if (typeof cgFadeTo === 'function') cgFadeTo(0.3, 1.0);
 
   // ── Drive the 3D garment camera through the FULL video — never stops early ──
   const camStart = performance.now();
@@ -171,12 +172,12 @@ function runIntro() {
     el.classList.remove('visible');
   }, TL.fadeStart);
 
-  // ── Garments: stay visible and moving until the video is genuinely about to
-  //     go white — dissolve INTO the blinding light, not before it starts ──
+  // ── Garments + corridor grain: stay visible/moving until the video is
+  //     genuinely about to go white — dissolve INTO the blinding light ──
   T(() => {
-    if (typeof g3FadeOutStaggered === 'function') {
-      g3FadeOutStaggered((TL.videoEnd - 1000 - (TL.fadeStart - 500)) / 1000);
-    }
+    const dur = (TL.videoEnd - 1000 - (TL.fadeStart - 500)) / 1000;
+    if (typeof g3FadeOutStaggered === 'function') g3FadeOutStaggered(dur);
+    if (typeof cgFadeTo === 'function') cgFadeTo(0, dur);
   }, TL.fadeStart - 500);
 
   // ── "Introducing" appears as corridor video approaches its white end ──
@@ -262,6 +263,7 @@ function handleSkipReplay() {
 function skipToEnd() {
   clearAllTimers();
   if (typeof g3FadeTo === 'function') g3FadeTo(0, 0.01);
+  if (typeof cgReset === 'function') cgReset();
 
   const vc = $('video-corridor');
   vc.pause(); vc.style.opacity = '0';

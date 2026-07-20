@@ -21,6 +21,9 @@
   <!-- LAYER 1: Video — corridor push -->
   <video id="video-corridor" src="corridor.mp4" muted playsinline preload="auto"></video>
 
+  <!-- LAYER 1a-ii: Corridor-only grain — 30% strength, fades with garments -->
+  <canvas id="corridor-grain-canvas"></canvas>
+
   <!-- LAYER 1b: Kiosk static image (replaces video 2) -->
   <div id="kiosk-layer">
     <img id="kiosk-img" src="kiosk-image.png" alt=""/>
@@ -28,9 +31,6 @@
 
   <!-- LAYER 1b-i: Hover zones for kiosk image features (top 3/4 height only) -->
   <div id="kiosk-hover-zones"></div>
-
-  <!-- LAYER 1b-ii: Gentle drifting fog over the kiosk floor (Three.js, transparent) -->
-  <canvas id="kiosk-fog-layer"></canvas>
 
   <!-- LAYER 1b-iii: Kiosk screen glow — appears on View Prototype click -->
   <div id="screen-glow"></div>
@@ -78,7 +78,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="grain.js"></script>
   <script src="garments3d.js"></script>
-  <script src="kioskfog.js"></script>
+  <script src="corridorgrain.js"></script>
   <script src="hoverlays.js"></script>
   <script src="intro.js"></script>
   <script src="particles.js"></script>

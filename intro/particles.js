@@ -95,7 +95,7 @@ function ensureBuilt() {
   const backing = document.getElementById('aisle-backing');
   if (backing) {
     const rect = backing.getBoundingClientRect();
-    const step = 8; // was 14 — denser for a smoother, more dramatic dissolve
+    const step = 5; // was 8 (then 14) — denser again for a smoother, more dramatic dissolve
     for (let y = 0; y < rect.height; y += step) {
       for (let x = 0; x < rect.width; x += step) {
         particleField.push({
@@ -112,7 +112,7 @@ function ensureBuilt() {
 
   // ── Text + scroll indicator: rasterize glyphs/icon into particle masks ──
   ['aisle-name', 'aisle-sub'].forEach(id => {
-    sampleTextElement(id, 2); // step 2, was 3 — denser
+    sampleTextElement(id, 1.4); // was 2 (then 3) — denser again
   });
 
   // Scroll indicator — sample its bounding box as a solid field (label +
@@ -121,7 +121,7 @@ function ensureBuilt() {
   const si = document.getElementById('scroll-ind');
   if (si && si.offsetWidth > 0) {
     const rect = si.getBoundingClientRect();
-    const step = 4;
+    const step = 3; // was 4 — denser
     for (let y = 0; y < rect.height; y += step) {
       for (let x = 0; x < rect.width; x += step) {
         particleField.push({
@@ -192,12 +192,9 @@ function animateTo(target) {
     if (dissolveProgress > 0.7) cta.classList.add('show');
     else cta.classList.remove('show');
 
-    // Kiosk fog + hover overlays only become active once the champagne/text
-    // has meaningfully dispersed — never while the corridor/aisle stage
-    // is still dominant.
-    if (typeof kfSetVisible === 'function') {
-      kfSetVisible(dissolveProgress > 0.3);
-    }
+    // Hover overlays only become active once the champagne/text has
+    // meaningfully dispersed — never while the corridor/aisle stage is
+    // still dominant.
     if (typeof hoverlaysSetEnabled === 'function') {
       hoverlaysSetEnabled(dissolveProgress > 0.3);
     }
