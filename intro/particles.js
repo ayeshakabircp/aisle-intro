@@ -76,10 +76,25 @@ function onTouchMove(e) {
 }
 
 // ── Build the particle field once (text + backing + scroll indicator) ──
+// Guarded on document.fonts.ready — if the custom font (Italiana) hasn't
+// actually finished loading in the render engine at the exact moment this
+// runs, the offscreen canvas samples against wrong/fallback glyph metrics,
+// producing few or no matching pixels — the text fades via opacity with no
+// particle representation, while other elements (system-ish fonts, always
+// available) sample fine. This was almost certainly the real cause.
 function ensureBuilt() {
   if (particlesBuilt) return;
   particlesBuilt = true;
 
+  const build = () => buildParticleField();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(build).catch(build);
+  } else {
+    build();
+  }
+}
+
+function buildParticleField() {
   const canvas = document.getElementById('particle-canvas');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
