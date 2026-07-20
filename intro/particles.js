@@ -76,25 +76,10 @@ function onTouchMove(e) {
 }
 
 // ── Build the particle field once (text + backing + scroll indicator) ──
-// Guarded on document.fonts.ready — if the custom font (Italiana) hasn't
-// actually finished loading in the render engine at the exact moment this
-// runs, the offscreen canvas samples against wrong/fallback glyph metrics,
-// producing few or no matching pixels — the text fades via opacity with no
-// particle representation, while other elements (system-ish fonts, always
-// available) sample fine. This was almost certainly the real cause.
 function ensureBuilt() {
   if (particlesBuilt) return;
   particlesBuilt = true;
 
-  const build = () => buildParticleField();
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(build).catch(build);
-  } else {
-    build();
-  }
-}
-
-function buildParticleField() {
   const canvas = document.getElementById('particle-canvas');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -110,7 +95,7 @@ function buildParticleField() {
   const backing = document.getElementById('aisle-backing');
   if (backing) {
     const rect = backing.getBoundingClientRect();
-    const step = 5; // was 8 (then 14) — denser again for a smoother, more dramatic dissolve
+    const step = 8; // was 14 — denser for a smoother, more dramatic dissolve
     for (let y = 0; y < rect.height; y += step) {
       for (let x = 0; x < rect.width; x += step) {
         particleField.push({
@@ -127,7 +112,7 @@ function buildParticleField() {
 
   // ── Text + scroll indicator: rasterize glyphs/icon into particle masks ──
   ['aisle-name', 'aisle-sub'].forEach(id => {
-    sampleTextElement(id, 1.4); // was 2 (then 3) — denser again
+    sampleTextElement(id, 2); // step 2, was 3 — denser
   });
 
   // Scroll indicator — sample its bounding box as a solid field (label +
@@ -136,7 +121,7 @@ function buildParticleField() {
   const si = document.getElementById('scroll-ind');
   if (si && si.offsetWidth > 0) {
     const rect = si.getBoundingClientRect();
-    const step = 3; // was 4 — denser
+    const step = 4;
     for (let y = 0; y < rect.height; y += step) {
       for (let x = 0; x < rect.width; x += step) {
         particleField.push({
@@ -195,13 +180,7 @@ function animateTo(target) {
 
     render(ctx, dissolveProgress);
 
-    // Original elements fade out on a front-loaded curve that finishes by
-    // ~30% scroll progress — matching how quickly their particles ramp to
-    // full brightness (see render()'s alpha formula). Without this, the
-    // original crisp text and its fully-bright particle cloud were both
-    // visible simultaneously for a long stretch, reading as "not dispersing".
-    const FADE_OUT_FRAC = 0.3;
-    const formedOpacity = Math.max(0, 1 - dissolveProgress / FADE_OUT_FRAC);
+    const formedOpacity = 1 - dissolveProgress;
     document.getElementById('aisle-name').style.opacity = String(formedOpacity * 0.9);
     document.getElementById('aisle-sub').style.opacity = String(formedOpacity * 0.9);
     const backing = document.getElementById('aisle-backing');
@@ -215,7 +194,8 @@ function animateTo(target) {
 
     // Hover overlays only become active once the champagne/text has
     // meaningfully dispersed — never while the corridor/aisle stage is
-    // still dominant.
+    // still dominant. (Fog reference removed — fog was dropped from the
+    // project entirely.)
     if (typeof hoverlaysSetEnabled === 'function') {
       hoverlaysSetEnabled(dissolveProgress > 0.3);
     }
