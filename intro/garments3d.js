@@ -165,11 +165,10 @@ function g3Init(onReady) {
   g3Tick();
 }
 
-// G3_EZ pushed considerably deeper (was -1700) so even the farthest
-// garments (out to Z_END:-3400) experience real, visible distance closure
-// by the end of the sequence — previously they barely moved/scaled since
-// the camera never got meaningfully closer to them.
-const G3_SZ = 700, G3_EZ = -2600;
+// Travel distance halved (was -2600) to slow the zoom-in rate by half —
+// same video duration, camera covers half the distance, so scale increases
+// at half the rate throughout.
+const G3_SZ = 700, G3_EZ = -950;
 
 function g3SetCameraProgress(p) {
   const z = G3_SZ + (G3_EZ - G3_SZ) * p;
