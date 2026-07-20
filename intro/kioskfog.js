@@ -1,8 +1,10 @@
-// ── KIOSK FOG — wispy drifting smoke near the floor of the static kiosk image ──
-// Procedural turbulent-noise texture (multiple octaves baked into a canvas),
-// not a flat gradient blob — reads as real wisps, not a solid shape.
-// Visibility is stage-gated via kfSetVisible() so it never bleeds onto the
-// corridor video (e.g. on replay) — only renders while the kiosk stage is active.
+// ── KIOSK FOG — wispy drifting cloud/smoke near the floor of the kiosk image ──
+// Real PerspectiveCamera (not orthographic) so layers at different z-depths
+// genuinely scale/parallax — near clouds bigger and faster, far ones smaller
+// and slower. Texture is built from layered soft radial blobs (a proper
+// cloud-sprite technique) instead of a flat noise field, for real wispiness.
+// Speed is calibrated so a full left-to-right traversal takes ~20 seconds,
+// not the ~60-150s a previous version accidentally produced.
 
 let kfScene, kfCamera, kfRenderer;
 let kfPlanes = [];
@@ -19,75 +21,81 @@ function kfInit() {
   kfRenderer.setSize(window.innerWidth, window.innerHeight);
 
   kfScene = new THREE.Scene();
-  kfCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-  kfCamera.position.z = 2;
+  kfCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+  kfCamera.position.set(0, 0, 10);
+  kfCamera.lookAt(0, 0, 0);
 
-  const mistTex = makeWispyTexture();
+  const cloudTex = makeCloudTexture();
 
-  // Half the previous height (was 0.35 * scale, now 0.175), still near the floor.
+  // Near -> far: bigger/faster/more opaque near, smaller/slower/fainter far —
+  // genuine depth now, since this is a real perspective camera.
   const defs = [
-    { y: -0.78, scale: 2.4, speed: 0.024, opacity: 0.14 },
-    { y: -0.83, scale: 3.0, speed: 0.015, opacity: 0.10 },
-    { y: -0.73, scale: 1.9, speed: 0.019, opacity: 0.12 },
+    { z: 2,  y: -1.55, w: 5.5, h: 1.0, speed: 0.42, opacity: 0.20 },
+    { z: 0,  y: -1.65, w: 4.2, h: 0.85, speed: 0.30, opacity: 0.15 },
+    { z: -2, y: -1.72, w: 3.2, h: 0.7, speed: 0.20, opacity: 0.11 },
   ];
 
   defs.forEach(d => {
     const mat = new THREE.MeshBasicMaterial({
-      map: mistTex,
+      map: cloudTex,
       transparent: true,
       opacity: d.opacity,
       depthTest: false,
       blending: THREE.AdditiveBlending,
     });
-    const geo = new THREE.PlaneGeometry(d.scale, d.scale * 0.175);
+    const geo = new THREE.PlaneGeometry(d.w, d.h);
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(-d.scale, d.y, 0);
+    mesh.position.set(-d.w * 0.9, d.y, d.z);
     kfScene.add(mesh);
-    kfPlanes.push({ mesh, speed: d.speed, scale: d.scale, y: d.y, baseOpacity: d.opacity });
+    kfPlanes.push({ mesh, speed: d.speed, w: d.w, y: d.y, z: d.z });
   });
 
   kfTick();
 }
 
-// Multi-octave value-noise, rendered to a canvas — genuinely wispy/turbulent
-// rather than a single smooth radial gradient. No external image needed.
-function makeWispyTexture() {
-  const W = 512, H = 256;
+// Layered soft radial blobs, composited with additive-ish overlap and a
+// noise-perturbed silhouette — reads as genuine wispy cloud/fog, not a
+// single flat gradient blob.
+function makeCloudTexture() {
+  const W = 1024, H = 384;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const ctx = c.getContext('2d');
-  const imgData = ctx.createImageData(W, H);
-  const buf = imgData.data;
+  ctx.clearRect(0, 0, W, H);
 
-  // Simple layered pseudo-noise (sum of sines at different frequencies/phases —
-  // cheap substitute for Perlin, produces convincing wispy variation).
-  function noise(x, y) {
-    let v = 0;
-    v += Math.sin(x * 0.018 + y * 0.021) * 0.5;
-    v += Math.sin(x * 0.041 - y * 0.013 + 1.7) * 0.3;
-    v += Math.sin(x * 0.007 + y * 0.052 + 4.1) * 0.4;
-    v += Math.sin((x + y) * 0.033 + 2.3) * 0.25;
-    return (v + 1.45) / 2.9; // normalize roughly to 0..1
+  function blob(cx, cy, r, alpha) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(255,248,236,${alpha})`);
+    g.addColorStop(0.5, `rgba(255,246,230,${alpha * 0.55})`);
+    g.addColorStop(1, 'rgba(255,246,230,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const idx = (y * W + x) * 4;
-      // Vertical falloff — denser near bottom-center, thinning toward edges/top
-      const distFromCenterY = Math.abs(y - H * 0.65) / (H * 0.5);
-      const edgeFalloff = 1 - Math.min(1, distFromCenterY);
-      const n = noise(x, y);
-      const a = Math.max(0, n - 0.25) * edgeFalloff * 255;
-
-      buf[idx]     = 255;
-      buf[idx + 1] = 246;
-      buf[idx + 2] = 230;
-      buf[idx + 3] = a;
-    }
+  // Base cluster of overlapping blobs along the horizontal band, bottom-weighted
+  const baseY = H * 0.62;
+  const blobCount = 22;
+  for (let i = 0; i < blobCount; i++) {
+    const cx = (i / blobCount) * W + (Math.random() - 0.5) * 90;
+    const cy = baseY + (Math.random() - 0.5) * H * 0.28;
+    const r = 60 + Math.random() * 110;
+    const alpha = 0.5 + Math.random() * 0.4;
+    blob(cx, cy, r, alpha);
   }
-  ctx.putImageData(imgData, 0, 0);
+  // Second, sparser layer of smaller wisps on top for irregular edges
+  for (let i = 0; i < 30; i++) {
+    const cx = Math.random() * W;
+    const cy = baseY + (Math.random() - 0.5) * H * 0.4;
+    const r = 20 + Math.random() * 45;
+    const alpha = 0.25 + Math.random() * 0.3;
+    blob(cx, cy, r, alpha);
+  }
+
   const tex = new THREE.CanvasTexture(c);
   tex.needsUpdate = true;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
   return tex;
 }
 
@@ -104,8 +112,10 @@ function kfTick(now) {
   const t = ((now || performance.now()) - kfT0) / 1000;
 
   kfPlanes.forEach(p => {
-    const span = p.scale * 2.2;
-    let x = -p.scale + ((t * p.speed) % span);
+    // Full span: from fully off-left to fully off-right of this plane's own width
+    const span = p.w * 1.8;
+    const startX = -p.w * 0.9;
+    let x = startX + ((t * p.speed) % span);
     p.mesh.position.x = x;
   });
 
@@ -114,5 +124,7 @@ function kfTick(now) {
 
 window.addEventListener('resize', () => {
   if (!kfRenderer) return;
+  kfCamera.aspect = window.innerWidth / window.innerHeight;
+  kfCamera.updateProjectionMatrix();
   kfRenderer.setSize(window.innerWidth, window.innerHeight);
 });
