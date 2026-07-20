@@ -174,8 +174,10 @@ function runIntro() {
   // ── Garments: stay visible and moving until the video is genuinely about to
   //     go white — dissolve INTO the blinding light, not before it starts ──
   T(() => {
-    if (typeof g3FadeTo === 'function') g3FadeTo(0, (TL.videoEnd - TL.fadeStart - 500) / 1000);
-  }, TL.fadeStart + 500);
+    if (typeof g3FadeOutStaggered === 'function') {
+      g3FadeOutStaggered((TL.videoEnd - 1000 - (TL.fadeStart - 500)) / 1000);
+    }
+  }, TL.fadeStart - 500);
 
   // ── "Introducing" appears as corridor video approaches its white end ──
   T(() => {
