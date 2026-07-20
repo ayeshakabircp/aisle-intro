@@ -37,7 +37,13 @@ function buildG3Data() {
   for (let i = 0; i < COUNT; i++) {
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
     const x = sampleX();
-    const baseY = CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100;
+    // Most garments keep today's comfortable range (unchanged ceiling), but
+    // roughly a quarter drop dramatically lower for real stagger/drama —
+    // never higher than the existing max.
+    const isDramatic = Math.random() < 0.25;
+    const baseY = isDramatic
+      ? CAMERA_LOOKAT_Y - (60 + Math.random() * 150)  // long drop, well below the rest
+      : CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100; // unchanged normal range
     data.push({
       x, z, baseY,
       sway: Math.random() * Math.PI * 2,
