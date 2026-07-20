@@ -40,7 +40,13 @@ function buildG3Data() {
   const data = [];
   const COUNT = 26;
   const Z_START = 50;
-  const Z_END = -3400;
+  // Shrunk from -3400 to -1500 — this now matches the camera's actual
+  // travel range (700 -> -950, see G3_EZ below). Previously the field was
+  // spread far deeper than the camera ever reached, so most garments
+  // (everything past the camera's shortened path) never got closer and
+  // stayed permanently tiny — not a stagger bug, the field itself was too
+  // deep for how far the camera now travels.
+  const Z_END = -1500;
   const Z_STEP = (Z_END - Z_START) / COUNT;
 
   // Guaranteed 13/13 left-right split, shuffled — pure per-item randomness
@@ -54,7 +60,12 @@ function buildG3Data() {
 
   for (let i = 0; i < COUNT; i++) {
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
-    const dist = Math.abs(z) + 300;
+    // Real distance from the camera's actual starting position (700), not
+    // the |z|+300 approximation — that badly underestimated distance for
+    // garments near z:50 (real distance ~650, not ~350), which meant the
+    // biggest/nearest garments got the SMALLEST offset — exactly backwards,
+    // and why the largest dresses were the ones still sitting on the text.
+    const dist = Math.max(700 - z, 200);
     const x = sampleX(dist, sides[i]);
     const baseY = sampleY(dist);
     data.push({
