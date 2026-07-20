@@ -11,17 +11,29 @@ let g3Opacity = 0;
 
 const CAMERA_LOOKAT_Y = 45;
 
-// x offset keeps the center 33% of the screen genuinely clean (no rare
-// center exception anymore), but no longer pushes all the way to the
-// edges — distributed more toward the middle-third-to-two-thirds zone.
-// Derived from screen-space fraction ≈ offsetFrac / tan(halfFOV≈25°≈0.466):
-// wanting on-screen clearance of ~16.5% (half of the clean center 33%) up
-// to ~80% (leaving edge breathing room, not slammed to the frame edge).
-function sampleX(z) {
-  const dist = Math.abs(z) + 300;
-  const side = Math.random() < 0.5 ? -1 : 1;
+// x offset keeps the center 33% of the screen genuinely clean, distributed
+// toward the middle-third-to-two-thirds zone (not slammed to the edges).
+function sampleX(dist, side) {
   const minFrac = 0.08, maxFrac = 0.36;
   return side * dist * (minFrac + Math.random() * (maxFrac - minFrac));
+}
+
+// Y bounded to the marked acceptable band (roughly 29%-77% down the frame,
+// i.e. ~40% of half-height above center, ~50% below) — scaled by each
+// garment's own distance, same reasoning as X: a fixed world-Y offset
+// compresses toward center at range, so without scaling, far garments
+// would drift outside the intended band while near ones stayed within it.
+// No more extreme low-drop outliers.
+function sampleY(dist) {
+  const halfH = dist * 0.4663; // tan(halfFOV) at ~25°
+  const t = Math.random();
+  if (t < 0.5) {
+    const frac = Math.random() * 0.32; // up to ~32% of half-height above center
+    return CAMERA_LOOKAT_Y + frac * halfH;
+  } else {
+    const frac = Math.random() * 0.40; // up to ~40% below center
+    return CAMERA_LOOKAT_Y - frac * halfH;
+  }
 }
 
 function buildG3Data() {
@@ -31,15 +43,20 @@ function buildG3Data() {
   const Z_END = -3400;
   const Z_STEP = (Z_END - Z_START) / COUNT;
 
+  // Guaranteed 13/13 left-right split, shuffled — pure per-item randomness
+  // can (and did) produce lopsided runs by chance over a small sample.
+  const sides = [];
+  for (let i = 0; i < COUNT; i++) sides.push(i % 2 === 0 ? -1 : 1);
+  for (let i = sides.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sides[i], sides[j]] = [sides[j], sides[i]];
+  }
+
   for (let i = 0; i < COUNT; i++) {
     const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
-    const x = sampleX(z);
-    // Increased dramatic-drop frequency — leans on Y variation to fill the
-    // frame rather than relying on extreme X spread toward the edges.
-    const isDramatic = Math.random() < 0.35;
-    const baseY = isDramatic
-      ? CAMERA_LOOKAT_Y - (60 + Math.random() * 150)
-      : CAMERA_LOOKAT_Y + (Math.random() - 0.5) * 100;
+    const dist = Math.abs(z) + 300;
+    const x = sampleX(dist, sides[i]);
+    const baseY = sampleY(dist);
     data.push({
       x, z, baseY,
       sway: Math.random() * Math.PI * 2,
