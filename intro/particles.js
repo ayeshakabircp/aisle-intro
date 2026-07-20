@@ -180,7 +180,13 @@ function animateTo(target) {
 
     render(ctx, dissolveProgress);
 
-    const formedOpacity = 1 - dissolveProgress;
+    // Original elements fade out on a front-loaded curve that finishes by
+    // ~30% scroll progress — matching how quickly their particles ramp to
+    // full brightness (see render()'s alpha formula). Without this, the
+    // original crisp text and its fully-bright particle cloud were both
+    // visible simultaneously for a long stretch, reading as "not dispersing".
+    const FADE_OUT_FRAC = 0.3;
+    const formedOpacity = Math.max(0, 1 - dissolveProgress / FADE_OUT_FRAC);
     document.getElementById('aisle-name').style.opacity = String(formedOpacity * 0.9);
     document.getElementById('aisle-sub').style.opacity = String(formedOpacity * 0.9);
     const backing = document.getElementById('aisle-backing');
