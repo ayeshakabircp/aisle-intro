@@ -84,55 +84,6 @@ function buildG3Data() {
   return data;
 }
 
-// ── EXTENSION BATCH — purely additive density layer, added to close the
-// "empty gap" before the white-out (see conversation notes). This does NOT
-// touch buildG3Data(), G3_DATA, or any of the original 26 garments' x/y/z —
-// it is a second, independent dataset generated with the exact same
-// sampling rules (same center-33%-clear logic via sampleX, same Y-band via
-// sampleY, same even L/R split discipline) and spans the SAME z-range as
-// the original (Z_START:50 -> Z_END:-1500) rather than extending further
-// into the distance — depth is not the fix here, density is: garments
-// further than the original range fade out EARLIER (furthest-fades-first),
-// which would only worsen tail-end emptiness, not fill it.
-//
-// zNorm for this batch is computed independently, scoped only to this
-// batch's own min/max z — so it produces its own internally-consistent
-// fade gradient (same formula/shape as the original), without shifting the
-// original 26's zNorm/fade timing in any way.
-const EXT_COUNT = 20;
-
-function buildG3DataExtended() {
-  const data = [];
-  const Z_START = 50;
-  const Z_END = -1500; // same span as the original batch — density, not depth
-  const Z_STEP = (Z_END - Z_START) / EXT_COUNT;
-
-  const sides = [];
-  for (let i = 0; i < EXT_COUNT; i++) sides.push(i % 2 === 0 ? -1 : 1);
-  for (let i = sides.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [sides[i], sides[j]] = [sides[j], sides[i]];
-  }
-
-  for (let i = 0; i < EXT_COUNT; i++) {
-    const z = Z_START + Z_STEP * i + (Math.random() - 0.5) * Math.abs(Z_STEP) * 0.5;
-    const dist = Math.max(700 - z, 200);
-    const x = sampleX(dist, sides[i]);
-    const baseY = sampleY(dist);
-    data.push({
-      x, z, baseY,
-      sway: Math.random() * Math.PI * 2,
-      img: (i % 7) + 1,
-    });
-  }
-
-  const zs = data.map(g => g.z);
-  const minZ = Math.min(...zs), maxZ = Math.max(...zs);
-  data.forEach(g => { g.zNorm = (maxZ - g.z) / (maxZ - minZ); });
-
-  return data;
-}
-
 function keyToTransparentTexture(img, cb) {
   try {
     const off = document.createElement('canvas');
@@ -157,41 +108,6 @@ function keyToTransparentTexture(img, cb) {
   }
 }
 
-// Shared mesh/thread creation, factored out so the original batch (called
-// first, with the exact same per-garment logic as before) and the new
-// extension batch (called second) build identically-behaving meshes from
-// whatever data array they're given. Nothing about HOW a garment mesh/
-// thread is built has changed — only that it can now run twice.
-function g3CreateBatch(data) {
-  const lineMatBase = { color: 0xD4A870, transparent: true, opacity: 0 };
-  data.forEach(g => {
-    const mat = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      alphaTest: 0.01,
-      depthWrite: false,
-    });
-    const w = 95, h = 175;
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    mesh.position.set(g.x, g.baseY, g.z);
-    mesh.userData = { baseX: g.x, baseZ: g.z, baseY: g.baseY, sway: g.sway, zNorm: g.zNorm, img: g.img };
-    mesh.visible = false;
-    g3Scene.add(mesh);
-    g3Meshes.push(mesh);
-
-    const topY = g.baseY + h / 2;
-    const threadTopY = topY + 220 + Math.random() * 80;
-    const geo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(g.x, threadTopY, g.z),
-      new THREE.Vector3(g.x, topY, g.z),
-    ]);
-    const line = new THREE.Line(geo, new THREE.LineBasicMaterial(lineMatBase));
-    g3Scene.add(line);
-    g3Threads.push({ line, geo, threadTopY, topY, baseZ: g.z });
-  });
-}
-
 function g3Init(onReady) {
   const canvas = document.getElementById('garment-3d-layer');
   g3Renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
@@ -210,25 +126,46 @@ function g3Init(onReady) {
   key.position.set(0, 200, 300);
   g3Scene.add(key);
 
-  // Original batch — unchanged call, unchanged data, unchanged positions.
   const G3_DATA = buildG3Data();
-  g3CreateBatch(G3_DATA);
+  const lineMatBase = { color: 0xD4A870, transparent: true, opacity: 0 };
 
-  // Extension batch — additive only, appended after the original 26.
-  const G3_DATA_EXT = buildG3DataExtended();
-  g3CreateBatch(G3_DATA_EXT);
+  // ── Step 1: create ALL meshes first ──
+  G3_DATA.forEach(g => {
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      alphaTest: 0.01,
+      depthWrite: false,
+    });
+    const w = 95, h = 175;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.position.set(g.x, g.baseY, g.z);
+    mesh.userData = { baseX: g.x, baseZ: g.z, baseY: g.baseY, sway: g.sway, zNorm: g.zNorm };
+    mesh.visible = false;
+    g3Scene.add(mesh);
+    g3Meshes.push(mesh);
 
-  const ALL_DATA = G3_DATA.concat(G3_DATA_EXT);
+    const topY = g.baseY + h / 2;
+    const threadTopY = topY + 220 + Math.random() * 80;
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(g.x, threadTopY, g.z),
+      new THREE.Vector3(g.x, topY, g.z),
+    ]);
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial(lineMatBase));
+    g3Scene.add(line);
+    g3Threads.push({ line, geo, threadTopY, topY, baseZ: g.z });
+  });
 
   // ── Step 2: load + key each unique image, apply to every mesh using it ──
-  const uniqueImgs = [...new Set(ALL_DATA.map(g => g.img))];
+  const uniqueImgs = [...new Set(G3_DATA.map(g => g.img))];
   let loadedCount = 0;
   const texCache = {};
 
   function onOneReady() {
     loadedCount++;
     if (loadedCount === uniqueImgs.length) {
-      ALL_DATA.forEach((g, i) => {
+      G3_DATA.forEach((g, i) => {
         const tex = texCache[g.img];
         if (tex) {
           g3Meshes[i].material.map = tex;
