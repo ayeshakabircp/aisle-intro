@@ -14,8 +14,8 @@ window._introComplete = false;
 function T(fn, ms) { introTimers.push(setTimeout(fn, ms)); }
 function clearAllTimers() { introTimers.forEach(clearTimeout); introTimers = []; }
 
-// ── SCALED TIMELINE (ms) ──
-const SCALE = 19958 / 22000;
+// ── TIMELINE (ms) — video is now 22.000s, matching original design length, so SCALE = 1 ──
+const SCALE = 22000 / 22000;
 const TL = {
   too1:      1500 * SCALE,
   many1:     3000 * SCALE,
@@ -27,9 +27,9 @@ const TL = {
   rightSize:13500 * SCALE,
   fadeStart:16000 * SCALE,  // word + garments begin fading out with the building light
   fadeDur:   1500 * SCALE,
-  videoEnd: 19958,
+  videoEnd: 22000,
   camPushEnd: 13500 * SCALE, // legacy marker, kept for reference
-  camDriveDur: 19958,        // garment camera now drives for the FULL video length
+  camDriveDur: 22000,        // garment camera now drives for the FULL video length
 };
 
 function showWord(text) {
