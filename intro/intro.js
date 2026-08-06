@@ -115,6 +115,9 @@ function resetAll() {
   $('view-proto-btn').style.transition = '';
   $('skip-replay-btn').style.opacity = '';
   $('skip-replay-btn').style.transition = '';
+  $('designer-note-btn').style.opacity = '';
+  $('designer-note-btn').style.transition = '';
+  $('designer-note-btn').classList.remove('show');
   viewProtoTriggered = false;
   $('white-flash').style.cssText = 'opacity:0;transition:none;';
 
@@ -245,6 +248,7 @@ function handoffSequence() {
     sequenceState = 'settled';
     window._introComplete = true;
     $('skip-replay-btn').textContent = 'Replay';
+    $('designer-note-btn').classList.add('show');
     // NOTE: view-proto-btn intentionally NOT shown here — it only appears
     // after the user scrolls to disperse the champagne/text and reveal the
     // kiosk image + CTA underneath (see particles.js).
@@ -287,6 +291,7 @@ function skipToEnd() {
   $('scroll-ind').classList.add('visible');
 
   $('skip-replay-btn').textContent = 'Replay';
+  $('designer-note-btn').classList.add('show');
   sequenceState = 'settled';
   window._introComplete = true;
 }
@@ -353,3 +358,9 @@ function closeDesignerNote() {
 function handleDesignerNoteKeydown(e) {
   if (e.key === 'Escape') closeDesignerNote();
 }
+
+// Stop wheel/touch input from bubbling past the modal to the window-level
+// scroll listener (particles.js) that drives the background dissolve —
+// without this, scrolling inside the modal also scrolled the kiosk scene.
+$('designer-note-overlay').addEventListener('wheel', e => e.stopPropagation());
+$('designer-note-overlay').addEventListener('touchmove', e => e.stopPropagation());
