@@ -310,6 +310,8 @@ function handleViewPrototype() {
   $('view-proto-btn').style.opacity = '0';
   $('skip-replay-btn').style.transition = 'opacity 0.3s ease';
   $('skip-replay-btn').style.opacity = '0';
+  $('designer-note-btn').style.transition = 'opacity 0.3s ease';
+  $('designer-note-btn').style.opacity = '0';
 
   // Glow starts soft, intensifies across the full 0.8s
   glow.style.transition = `opacity ${DUR}ms ease-in, filter ${DUR}ms ease-in`;
@@ -335,4 +337,19 @@ function handleViewPrototype() {
   setTimeout(() => {
     location.href = 'https://aisle-intro.vercel.app/app/';
   }, DUR);
+}
+
+// ── A NOTE FROM THE DESIGNER — centered modal ──
+function openDesignerNote() {
+  $('designer-note-overlay').classList.add('show');
+  document.addEventListener('keydown', handleDesignerNoteKeydown);
+}
+
+function closeDesignerNote() {
+  $('designer-note-overlay').classList.remove('show');
+  document.removeEventListener('keydown', handleDesignerNoteKeydown);
+}
+
+function handleDesignerNoteKeydown(e) {
+  if (e.key === 'Escape') closeDesignerNote();
 }

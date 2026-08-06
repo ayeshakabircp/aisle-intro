@@ -69,11 +69,29 @@
   <!-- Skip Intro / Replay button -->
   <button id="skip-replay-btn" onclick="handleSkipReplay()">Skip Intro</button>
 
+  <!-- A note from the designer button -->
+  <button id="designer-note-btn" onclick="openDesignerNote()">A note from the designer</button>
+
   <!-- View Prototype button -->
   <button id="view-proto-btn" onclick="handleViewPrototype()">View Prototype</button>
 
   <!-- Particle canvas for scroll dissolve -->
   <canvas id="particle-canvas"></canvas>
+
+  <!-- A note from the designer — modal -->
+  <div id="designer-note-overlay" onclick="if (event.target === this) closeDesignerNote()">
+    <div id="designer-note-modal">
+      <button id="designer-note-close" onclick="closeDesignerNote()" aria-label="Close">&times;</button>
+      <div class="dn-title">A note from the designer</div>
+      <div class="dn-body">
+        <p>Years of loving to dress up but hating to shop (a curse of a combination I swear) made me think; what if I could get rid of the ugly parts? The endless shifting through racks to select a few, waiting in line at the trial room and finally trying them only to realise it doesn't quite fit you (your size is out of stock) or that it simply doesn't suit you (and you have no idea what will). Things get a bit better online shopping (thank God for filters). But a different set of problems arise there, we've all returned products that looked nothing like the picture.</p>
+        <p>So here I am, trying to combine the best of both worlds with a self-serve smart shopping kiosk that acts as a personalized style companion. A mouthful to say, a bit ambitious in its implementation (virtual try-ons, trial room delivery?) but helpful for sure probably mostly.</p>
+        <p><strong>What I built:</strong> a full kiosk flow: conversational discovery, a customisable avatar that dresses itself as you browse, an outfit panel that tracks everything you've tried, fitting-room and virtual try-on handoff, cart, and checkout.</p>
+        <p><strong>What I cut:</strong> every product needs a hand mapped 3D render, which doesn't scale currently. So the avatar is static across a curated set of hero pieces. Real flows but mocked data.</p>
+        <p><strong>With 10 more hours:</strong> the outfit panel is where the real potential sits. Right now it mostly displays. It should advise. Actual styling tips, reassurance when you're second guessing, reasoning about why something works on you. Build, body type and skin tone personalisation so you can judge whether a piece actually suits you before committing, plus 360 degree view. And "pair it with" is barely scratched as an upsell surface. That's where the USP sits.</p>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="grain.js"></script>
